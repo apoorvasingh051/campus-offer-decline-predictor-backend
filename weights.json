@@ -1,0 +1,15 @@
+{
+  "tier1": 18,
+  "tier2": 10,
+  "other": 5,
+  "tech": 10,
+  "cgpa_high": 14,
+  "cgpa_mid": 7,
+  "cgpa_low": 3,
+  "intern6m": 10,
+  "intern_tier1": 10,
+  "eng_critical": 30,
+  "eng_risky": 14,
+  "eng_safe": -15,
+  "threshold": 65
+}
