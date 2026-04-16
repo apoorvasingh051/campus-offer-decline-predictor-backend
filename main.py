@@ -6,6 +6,7 @@ Reads live data from Google Sheets, scores candidates, exposes REST API.
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import requests
 import json
 import os
@@ -320,6 +321,9 @@ class WeightsPayload(BaseModel):
     eng_risky: float = 14
     eng_safe: float = -15
     threshold: float = 65
+
+    class Config:
+        extra = "allow"
 
 @app.post("/weights")
 def update_weights(payload: WeightsPayload):
