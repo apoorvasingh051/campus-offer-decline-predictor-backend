@@ -5,7 +5,6 @@ Reads live data from Google Sheets, scores candidates, exposes REST API.
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import Optional
 import requests
 import json
@@ -307,55 +306,22 @@ def get_weights():
     """Return current signal weights."""
     return load_weights()
 
-class WeightsPayload(BaseModel):
-    tier1: float = 18
-    tier2: float = 10
-    other: float = 5
-    tech: float = 10
-    cgpa_high: float = 14
-    cgpa_mid: float = 7
-    cgpa_low: float = 3
-    intern6m: float = 10
-    intern_tier1: float = 10
-    eng_critical: float = 30
-    eng_risky: float = 14
-    eng_safe: float = -15
-    threshold: float = 65
-
-    class Config:
-        extra = "allow"
-
 @app.post("/weights")
-def update_weights(payload: WeightsPayload):
-    """Save new weights, re-score all candidates, return updated list."""
-    weights = payload.dict()
+async def update_weights(payload: dict):
+    weights = {**DEFAULT_WEIGHTS, **payload}
     save_weights(weights)
     raw = fetch_sheet_data()
     candidates = build_candidates(raw, weights)
-    return {
-        "candidates": candidates,
-        "weights": weights,
-        "total": len(candidates),
-        "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]),
-        "refreshed_at": datetime.now().isoformat(),
-    }
-
-class OutcomePayload(BaseModel):
-    name: str
-    outcome: str  # "joined" or "declined"
+    return {"candidates": candidates, "weights": weights, "total": len(candidates), "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]), "refreshed_at": datetime.now().isoformat()}
 
 @app.post("/outcome")
-def record_outcome(payload: OutcomePayload):
-    """Record a join/decline outcome for future model training."""
-    if payload.outcome not in ["joined", "declined"]:
-        raise HTTPException(status_code=400, detail="outcome must be 'joined' or 'declined'")
-    save_outcome(payload.name, payload.outcome)
-    return {"status": "recorded", "name": payload.name, "outcome": payload.outcome}
-
-@app.get("/outcomes")
-def get_outcomes():
-    """Return all recorded outcomes."""
-    return load_outcomes()
+async def record_outcome(payload: dict):
+    name = payload.get("name", "")
+    outcome = payload.get("outcome", "")
+    if outcome not in ["joined", "declined"]:
+        raise HTTPException(status_code=400, detail="outcome must be joined or declined")
+    save_outcome(name, outcome)
+    return {"status": "recorded", "name": name, "outcome": outcome}
 
 @app.get("/health")
 def health():
