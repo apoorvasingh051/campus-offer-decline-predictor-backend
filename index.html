@@ -1067,7 +1067,7 @@
 // =====================================================================
 // DATA — reconstructed from conversation history
 // =====================================================================
-const CONFIRMED_DECLINES = ["Lakshya Jain", "Aakash Kumar Singh", "Arvind Vidhyashankar"];
+const CONFIRMED_DECLINES = []; // outcomes now come from sheet only
 
 let CANDIDATES_RAW = [];  // populated from backend on load
 // =====================================================================
@@ -1097,7 +1097,7 @@ let ENG_WEIGHTS = {
 
 // Outcomes (can be updated by recruiter)
 let OUTCOMES = {};
-CONFIRMED_DECLINES.forEach(n => OUTCOMES[n] = 'declined');
+// outcomes populated from backend sheet data only
 
 // =====================================================================
 // SCORING ENGINE
@@ -1287,7 +1287,9 @@ function renderDashboard() {
   if (kpiStrip) kpiStrip.style.display = 'grid';
   const all = scoredCandidates();
   const active = all; // include declined — they validate model accuracy
-  const high = active.filter(c => c.risk_pct >= WEIGHTS.threshold).slice(0, 10);
+  // Top 10 = simply the 10 highest scoring candidates, no filtering by outcome
+  const top10 = active.slice(0, 10);
+  const high = active.filter(c => c.risk_pct >= WEIGHTS.threshold);
   const medium = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold).slice(0, 30);
   const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
   const declines = Object.values(OUTCOMES).filter(v => v === 'declined').length;
@@ -1319,9 +1321,9 @@ function renderDashboard() {
   }).join('');
 
   // Top 10
-  document.getElementById('top10List').innerHTML = high.length 
-    ? high.map((c, i) => candidateRow(c, i+1, false)).join('') 
-    : '<div style="padding:24px;text-align:center;color:var(--green);font-size:12px;">✓ No high risk candidates right now</div>';
+  document.getElementById('top10List').innerHTML = top10.length 
+    ? top10.map((c, i) => candidateRow(c, i+1, false)).join('') 
+    : '<div style="padding:24px;text-align:center;color:var(--green);font-size:12px;">✓ No candidates loaded yet — hit Refresh</div>';
   
   const medEl = document.getElementById('medium30List');
   const medCount = document.getElementById('mediumCount');
