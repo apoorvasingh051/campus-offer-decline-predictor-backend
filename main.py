@@ -27,7 +27,6 @@ app.add_middleware(
 
 SHEET_ID = "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI"
 WEIGHTS_FILE = "weights.json"
-OUTCOMES_FILE = "outcomes.csv"
 
 # Column name mappings from your Google Sheet headers
 # Edit these if your sheet column names differ
@@ -234,19 +233,12 @@ def calc_risk(c: dict, weights: dict) -> dict:
 # ── OUTCOMES PERSISTENCE ──────────────────────────────────────────────────────
 
 def load_outcomes() -> dict:
-    """Load outcomes from outcomes.csv only — sheet is now the source of truth."""
-    outcomes = {}
-    if os.path.exists(OUTCOMES_FILE):
-        with open(OUTCOMES_FILE) as f:
-            for line in f:
-                parts = line.strip().split(",", 1)
-                if len(parts) >= 2:
-                    outcomes[parts[0]] = parts[1]
-    return outcomes
+    """Outcomes come from sheet Offer Status column only — no local file needed."""
+    return {}
 
 def save_outcome(name: str, outcome: str):
-    with open(OUTCOMES_FILE, "a") as f:
-        f.write(f"{name},{outcome},{datetime.now().isoformat()}\n")
+    """Outcomes are managed in the Google Sheet — nothing to save locally."""
+    pass
 
 # ── MAIN PIPELINE ─────────────────────────────────────────────────────────────
 
@@ -367,8 +359,8 @@ def record_outcome(payload: OutcomePayload):
 
 @app.get("/outcomes")
 def get_outcomes():
-    """Return all recorded outcomes."""
-    return load_outcomes()
+    """Outcomes are read live from the sheet Offer Status column."""
+    return {"message": "Outcomes are read from Google Sheet Offer Status column in real time"}
 
 @app.get("/health")
 def health():
