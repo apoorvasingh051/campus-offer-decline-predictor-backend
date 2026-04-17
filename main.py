@@ -25,7 +25,7 @@ app.add_middleware(
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-SHEET_ID = "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI"
+SHEET_ID = "1txsauhdN2PXo-NlgLnyB0dTl6xHuj_pFno3_6PN4UcA"
 WEIGHTS_FILE = "weights.json"
 OUTCOMES_FILE = "outcomes.csv"
 
@@ -169,15 +169,17 @@ def parse_role(role: str) -> str:
     return role or "Other"
 
 def parse_offer_status(status: str) -> str:
-    """Maps sheet Offer Status values to joined/declined/pending."""
+    """
+    Maps sheet Offer Status to declined only.
+    We never mark 'joined' from the sheet until after actual joining date —
+    candidates who accepted the offer are still at risk until they physically join.
+    """
     if not status:
         return None
     s = status.strip().lower()
-    if any(k in s for k in ["decline", "rejected", "withdrawn", "not joining", "backed out", "no show"]):
+    if any(k in s for k in ["decline", "rejected", "withdrawn", "not joining", "backed out", "no show", "revoked"]):
         return "declined"
-    if any(k in s for k in ["joined", "joining", "accepted", "confirmed", "onboard"]):
-        return "joined"
-    return None  # pending / unknown
+    return None  # everything else (accepted, confirmed, pending) = still active, not yet joined
 
 # ── SCORING ENGINE ────────────────────────────────────────────────────────────
 
