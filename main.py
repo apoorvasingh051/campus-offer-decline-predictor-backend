@@ -342,19 +342,18 @@ class WeightsPayload(BaseModel):
     threshold: float = 65
 
 @app.post("/weights")
-def update_weights(payload: WeightsPayload):
-    """Save new weights, re-score all candidates, return updated list."""
-    weights = payload.dict()
+async def update_weights(payload: dict):
+    """Save new weights and return confirmation."""
+    weights = {**DEFAULT_WEIGHTS, **payload}
     save_weights(weights)
-    raw = fetch_sheet_data()
-    candidates = build_candidates(raw, weights)
-    return {
-        "candidates": candidates,
-        "weights": weights,
-        "total": len(candidates),
-        "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]),
-        "refreshed_at": datetime.now().isoformat(),
-    }
+    return {"status": "saved", "weights": weights}
+
+@app.post("/weights/save")
+async def save_weights_endpoint(payload: dict):
+    """Save weights to disk so all users get them on next load."""
+    weights = {**DEFAULT_WEIGHTS, **payload}
+    save_weights(weights)
+    return {"status": "saved", "weights": weights, "saved_at": datetime.now().isoformat()}
 
 class OutcomePayload(BaseModel):
     name: str
