@@ -5,7 +5,7 @@ Reads live data from Google Sheets, scores candidates, exposes REST API.
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from pydantic import BaseModel
 import requests
 import json
 import os
@@ -25,7 +25,7 @@ app.add_middleware(
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-SHEET_ID = "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI"
+SHEET_ID = "1txsauhdN2PXo-NlgLnyB0dTl6xHuj_pFno3_6PN4UcA"
 WEIGHTS_FILE = "weights.json"
 OUTCOMES_FILE = "outcomes.csv"
 
@@ -37,6 +37,7 @@ COL_MAP = {
     "role":          "Role offered",
     "cgpa":          "CGPA",
     "doj":           "DOJ",
+    "offer_status":  "Offer Status",
     "joining_form":  "Google form - Joining Dates",
     "swag_form":     "Google form - SWAG",
     "gmeet_k":       "Gmeet 1 - Kick off attendance",
@@ -167,6 +168,17 @@ def parse_role(role: str) -> str:
     if "SA" in r or "BUSINESS" in r: return "SA-BMT"
     return role or "Other"
 
+def parse_offer_status(status: str) -> str:
+    """Maps sheet Offer Status values to joined/declined/pending."""
+    if not status:
+        return None
+    s = status.strip().lower()
+    if any(k in s for k in ["decline", "rejected", "withdrawn", "not joining", "backed out", "no show"]):
+        return "declined"
+    if any(k in s for k in ["joined", "joining", "accepted", "confirmed", "onboard"]):
+        return "joined"
+    return None  # pending / unknown
+
 # ── SCORING ENGINE ────────────────────────────────────────────────────────────
 
 def engagement_score(c: dict) -> float:
@@ -220,15 +232,13 @@ def calc_risk(c: dict, weights: dict) -> dict:
 # ── OUTCOMES PERSISTENCE ──────────────────────────────────────────────────────
 
 def load_outcomes() -> dict:
+    """Load outcomes from outcomes.csv only — sheet is now the source of truth."""
     outcomes = {}
-    # Pre-load confirmed declines from this cohort
-    for name in ["Lakshya Jain", "Aakash Kumar Singh", "Arvind Vidhyashankar"]:
-        outcomes[name] = "declined"
     if os.path.exists(OUTCOMES_FILE):
         with open(OUTCOMES_FILE) as f:
             for line in f:
                 parts = line.strip().split(",", 1)
-                if len(parts) == 2:
+                if len(parts) >= 2:
                     outcomes[parts[0]] = parts[1]
     return outcomes
 
@@ -252,6 +262,11 @@ def build_candidates(raw_rows: list[dict], weights: dict) -> list[dict]:
         role_raw = row.get(COL_MAP["role"], "")
         call_note = row.get(COL_MAP["calling_data"], "")
 
+        # Read outcome from sheet first, then fall back to outcomes.csv
+        sheet_outcome = parse_offer_status(row.get(COL_MAP["offer_status"], ""))
+        csv_outcome = outcomes.get(name)
+        final_outcome = sheet_outcome or csv_outcome  # sheet takes priority
+
         c = {
             "name": name,
             "college": college,
@@ -272,7 +287,7 @@ def build_candidates(raw_rows: list[dict], weights: dict) -> list[dict]:
             "call_risk": classify_call_note(call_note),
             "call_note": call_note[:200] if call_note else "",
             "called": bool(call_note and call_note.strip()),
-            "outcome": outcomes.get(name),
+            "outcome": final_outcome,
         }
 
         scores = calc_risk(c, weights)
@@ -306,22 +321,52 @@ def get_weights():
     """Return current signal weights."""
     return load_weights()
 
+class WeightsPayload(BaseModel):
+    tier1: float = 18
+    tier2: float = 10
+    other: float = 5
+    tech: float = 10
+    cgpa_high: float = 14
+    cgpa_mid: float = 7
+    cgpa_low: float = 3
+    intern6m: float = 10
+    intern_tier1: float = 10
+    eng_critical: float = 30
+    eng_risky: float = 14
+    eng_safe: float = -15
+    threshold: float = 65
+
 @app.post("/weights")
-async def update_weights(payload: dict):
-    weights = {**DEFAULT_WEIGHTS, **payload}
+def update_weights(payload: WeightsPayload):
+    """Save new weights, re-score all candidates, return updated list."""
+    weights = payload.dict()
     save_weights(weights)
     raw = fetch_sheet_data()
     candidates = build_candidates(raw, weights)
-    return {"candidates": candidates, "weights": weights, "total": len(candidates), "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]), "refreshed_at": datetime.now().isoformat()}
+    return {
+        "candidates": candidates,
+        "weights": weights,
+        "total": len(candidates),
+        "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]),
+        "refreshed_at": datetime.now().isoformat(),
+    }
+
+class OutcomePayload(BaseModel):
+    name: str
+    outcome: str  # "joined" or "declined"
 
 @app.post("/outcome")
-async def record_outcome(payload: dict):
-    name = payload.get("name", "")
-    outcome = payload.get("outcome", "")
-    if outcome not in ["joined", "declined"]:
-        raise HTTPException(status_code=400, detail="outcome must be joined or declined")
-    save_outcome(name, outcome)
-    return {"status": "recorded", "name": name, "outcome": outcome}
+def record_outcome(payload: OutcomePayload):
+    """Record a join/decline outcome for future model training."""
+    if payload.outcome not in ["joined", "declined"]:
+        raise HTTPException(status_code=400, detail="outcome must be 'joined' or 'declined'")
+    save_outcome(payload.name, payload.outcome)
+    return {"status": "recorded", "name": payload.name, "outcome": payload.outcome}
+
+@app.get("/outcomes")
+def get_outcomes():
+    """Return all recorded outcomes."""
+    return load_outcomes()
 
 @app.get("/health")
 def health():
