@@ -806,7 +806,7 @@
         </div>
         <div class="panel">
           <div class="panel-header">
-            <span class="panel-title" style="color:var(--green)">🟢 SAFE</span>
+            <span class="panel-title" style="color:var(--green)">🟢 OK — SAFE</span>
             <span class="panel-meta" id="safeCount">LOW RISK</span>
           </div>
           <div id="safeQueue"></div>
@@ -822,7 +822,7 @@
           <button class="filter-btn active" onclick="setFilter('all', this)">ALL</button>
           <button class="filter-btn" onclick="setFilter('high', this)">HIGH RISK</button>
           <button class="filter-btn" onclick="setFilter('medium', this)">MEDIUM</button>
-          <button class="filter-btn" onclick="setFilter('low', this)">LOW</button>
+          <button class="filter-btn" onclick="setFilter('low', this)">OK</button>
           <button class="filter-btn" onclick="setFilter('may', this)">MAY DOJ</button>
           <button class="filter-btn" onclick="setFilter('jun', this)">JUN DOJ</button>
           <button class="filter-btn" onclick="setFilter('jul', this)">JUL DOJ</button>
@@ -905,8 +905,8 @@
             </div>
             <div class="weight-row">
               <div class="weight-label">Tier-1 Company Intern</div>
-              <div class="weight-val" id="wt_intern_tier1">10</div>
-              <input type="range" min="0" max="20" value="10" oninput="updateWeight('intern_tier1', this.value)">
+              <div class="weight-val" id="wt_intern_tier1">12</div>
+              <input type="range" min="0" max="20" value="12" oninput="updateWeight('intern_tier1', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
           </div>
@@ -937,8 +937,8 @@
             <div class="weight-group-title">HIGH RISK THRESHOLD</div>
             <div class="weight-row">
               <div class="weight-label">Min % to flag as HIGH</div>
-              <div class="weight-val" id="wt_threshold">65</div>
-              <input type="range" min="50" max="85" value="65" oninput="updateWeight('threshold', this.value)">
+              <div class="weight-val" id="wt_threshold">68</div>
+              <input type="range" min="50" max="85" value="68" oninput="updateWeight('threshold', this.value)">
               <div class="weight-val-right">%</div>
             </div>
           </div>
@@ -953,14 +953,14 @@
             <div class="weight-group">
               <div class="weight-group-title">FORM COMPLETION</div>
               <div class="weight-row"><div class="weight-label">Joining form filled<div class="weight-rec">↑ REC: +4 · strongest intent signal</div></div><div class="weight-val" id="ew_jf_yes">+4</div><input type="range" min="1" max="8" value="4" oninput="updateEngWeight('jf_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Joining form not filled<div class="weight-rec">↑ REC: -3 · all confirmed declines missed this</div></div><div class="weight-val" id="ew_jf_no">-2</div><input type="range" min="-8" max="0" value="-2" oninput="updateEngWeight('jf_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">Joining form not filled<div class="weight-rec">↑ REC: -3 · all confirmed declines missed this</div></div><div class="weight-val" id="ew_jf_no">-3</div><input type="range" min="-8" max="0" value="-3" oninput="updateEngWeight('jf_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
               <div class="weight-row"><div class="weight-label">SWAG form filled<div class="weight-rec">↑ REC: +1 · weak but positive signal</div></div><div class="weight-val" id="ew_sw_yes">+1</div><input type="range" min="0" max="4" value="1" oninput="updateEngWeight('sw_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
               <div class="weight-row"><div class="weight-label">SWAG form not filled<div class="weight-rec">↑ REC: -1</div></div><div class="weight-val" id="ew_sw_no">-1</div><input type="range" min="-4" max="0" value="-1" oninput="updateEngWeight('sw_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
             </div>
             <div class="weight-group">
               <div class="weight-group-title">GMEET ATTENDANCE</div>
               <div class="weight-row"><div class="weight-label">Kickoff attended<div class="weight-rec">↑ REC: +2</div></div><div class="weight-val" id="ew_gk_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('gk_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Kickoff missed<div class="weight-rec">↑ REC: -1 · all 3 declines missed kickoff</div></div><div class="weight-val" id="ew_gk_no">-0.5</div><input type="range" min="-4" max="0" step="0.5" value="-0.5" oninput="updateEngWeight('gk_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">Kickoff missed<div class="weight-rec">↑ REC: -1 · all 3 declines missed kickoff</div></div><div class="weight-val" id="ew_gk_no">-1</div><input type="range" min="-4" max="0" step="0.5" value="-1" oninput="updateEngWeight('gk_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
               <div class="weight-row"><div class="weight-label">AMA attended<div class="weight-rec">↑ REC: +1.5 · self-selecting, slightly lower weight</div></div><div class="weight-val" id="ew_ga_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('ga_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
               <div class="weight-row"><div class="weight-label">AMA missed<div class="weight-rec">↑ REC: -0.5</div></div><div class="weight-val" id="ew_ga_no">-0.5</div><input type="range" min="-4" max="0" step="0.5" value="-0.5" oninput="updateEngWeight('ga_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
             </div>
@@ -977,7 +977,7 @@
               <div class="weight-row"><div class="weight-label">Excited / Keen</div><div class="weight-val" id="ew_call_pos_mild">+3</div><input type="range" min="0" max="6" value="3" oninput="updateEngWeight('call_pos_mild', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
               <div class="weight-row"><div class="weight-label">Not reachable / No answer<div class="weight-rec">↑ REC: -6 · single strongest negative signal</div></div><div class="weight-val" id="ew_call_ghost">-6</div><input type="range" min="-12" max="0" value="-6" oninput="updateEngWeight('call_ghost', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
               <div class="weight-row"><div class="weight-label">MBA / Masters / PhD</div><div class="weight-val" id="ew_call_mba">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_mba', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">PPO / Competing offer<div class="weight-rec">↑ REC: -4 · bump up, very reliable decline signal</div></div><div class="weight-val" id="ew_call_ppo">-3</div><input type="range" min="-10" max="0" value="-3" oninput="updateEngWeight('call_ppo', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">PPO / Competing offer<div class="weight-rec">↑ REC: -4 · bump up, very reliable decline signal</div></div><div class="weight-val" id="ew_call_ppo">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_ppo', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
               <div class="weight-row"><div class="weight-label">Risky / Red flag keywords</div><div class="weight-val" id="ew_call_risky">-2</div><input type="range" min="-6" max="0" value="-2" oninput="updateEngWeight('call_risky', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
             </div>
           </div>
@@ -1057,20 +1057,21 @@ let WEIGHTS = {
   tier1: 18, tier2: 10, other: 5,
   tech: 10,
   cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
-  intern6m: 10, intern_tier1: 10,
+  intern6m: 10, intern_tier1: 12,  // bumped: most reliable single signal
   eng_critical: 30, eng_risky: 14, eng_safe: -15,
-  threshold: 65
+  threshold: 68,     // tightened to get ~10 high risk
+  medium_threshold: 45  // 30 medium risk band
 };
 
 // Engagement signal weights (now adjustable)
 let ENG_WEIGHTS = {
-  jf_yes: 4, jf_no: -2,
+  jf_yes: 4, jf_no: -3,       // -3: all 3 confirmed declines missed this
   sw_yes: 1, sw_no: -1,
-  gk_yes: 2, gk_no: -0.5,
+  gk_yes: 2, gk_no: -1,       // -1: all 3 confirmed declines missed kickoff
   ga_yes: 2, ga_no: -0.5,
   li_mention: 3, li_lc: 2, li_c: 1.5, li_l: 1,
   call_pos_strong: 5, call_pos_mild: 3,
-  call_ghost: -6, call_mba: -4, call_ppo: -3, call_risky: -2,
+  call_ghost: -6, call_mba: -4, call_ppo: -4, call_risky: -2,  // ppo bumped to -4
   eng_critical_threshold: 4, eng_risky_threshold: 10
 };
 
@@ -1167,8 +1168,9 @@ function scoredCandidates(weights) {
 // =====================================================================
 function riskColor(pct, threshold) {
   threshold = threshold || WEIGHTS.threshold;
+  const medium = WEIGHTS.medium_threshold || 45;
   if (pct >= threshold) return 'var(--accent)';
-  if (pct >= 40) return 'var(--amber)';
+  if (pct >= medium) return 'var(--amber)';
   return 'var(--green)';
 }
 
@@ -1265,18 +1267,18 @@ function renderDashboard() {
   if (kpiStrip) kpiStrip.style.display = 'grid';
   const all = scoredCandidates();
   const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  const medium = all.filter(c => c.risk_pct >= 40 && c.risk_pct < WEIGHTS.threshold);
-  const low = all.filter(c => c.risk_pct < 40);
+  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold);
+  const low = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
   const declines = Object.values(OUTCOMES).filter(v => v === 'declined').length;
   const joins = Object.values(OUTCOMES).filter(v => v === 'joined').length;
 
   document.getElementById('kpiStrip').innerHTML = `
     <div class="kpi"><div class="kpi-label">Total Offers</div><div class="kpi-value kpi-blue">${all.length}</div><div class="kpi-sub">2026 cohort</div></div>
-    <div class="kpi"><div class="kpi-label">High Risk</div><div class="kpi-value kpi-red">${high.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% predicted</div></div>
-    <div class="kpi"><div class="kpi-label">Medium Risk</div><div class="kpi-value kpi-amber">${medium.length}</div><div class="kpi-sub">40–${WEIGHTS.threshold-1}%</div></div>
-    <div class="kpi"><div class="kpi-label">Low Risk</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;40%</div></div>
-    <div class="kpi"><div class="kpi-label">Confirmed Declines</div><div class="kpi-value kpi-confirmed">${declines}</div><div class="kpi-sub">${joins} joined confirmed</div></div>
-    <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${high.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk, ≤6 weeks</div></div>
+    <div class="kpi"><div class="kpi-label">🔴 High Risk</div><div class="kpi-value kpi-red">${high.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% · act now</div></div>
+    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${medium.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold}–${WEIGHTS.threshold-1}% · monitor</div></div>
+    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold}% · safe</div></div>
+    <div class="kpi"><div class="kpi-label">Confirmed Declines</div><div class="kpi-value kpi-confirmed">${declines}</div><div class="kpi-sub">from sheet outcomes</div></div>
+    <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${high.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk · ≤6 weeks</div></div>
   `;
 
   // Role chart
@@ -1305,8 +1307,8 @@ function renderDashboard() {
 function renderAction() {
   const all = scoredCandidates();
   const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold && !OUTCOMES[c.name]);
-  const medium = all.filter(c => c.risk_pct >= 40 && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]);
-  const safe = all.filter(c => c.risk_pct < 40 && !OUTCOMES[c.name]);
+  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]);
+  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45) && !OUTCOMES[c.name]);
 
   document.getElementById('criticalCount').textContent = `${high.length} CANDIDATES`;
   document.getElementById('riskyCount').textContent = `${medium.length} CANDIDATES`;
@@ -1347,8 +1349,8 @@ function renderSearch() {
   }
   
   if (currentFilter === 'high') all = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  else if (currentFilter === 'medium') all = all.filter(c => c.risk_pct >= 40 && c.risk_pct < WEIGHTS.threshold);
-  else if (currentFilter === 'low') all = all.filter(c => c.risk_pct < 40);
+  else if (currentFilter === 'medium') all = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold);
+  else if (currentFilter === 'low') all = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
   else if (currentFilter === 'may') all = all.filter(c => c.doj === 'May');
   else if (currentFilter === 'jun') all = all.filter(c => c.doj === 'Jun');
   else if (currentFilter === 'jul') all = all.filter(c => c.doj === 'Jul');
