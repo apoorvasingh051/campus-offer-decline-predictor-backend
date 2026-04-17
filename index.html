@@ -1620,9 +1620,7 @@ function showToast(msg) {
 // =====================================================================
 let LIVE_MODE = false;  // true when backend URL is set and responding
 
-function getBackendUrl() {
-  return (document.getElementById('backendUrl').value || '').trim().replace(/\/$/, '');
-}
+// getBackendUrl defined above
 
 function validateBackend() {
   // Backend URL is now hardcoded - nothing to validate
@@ -1749,25 +1747,28 @@ function populateAISelect() {
 // =====================================================================
 // AUTO-FETCH ON LOAD
 // =====================================================================
-async function autoFetchFromBackend() {
-  const url = getBackendUrl();
-  if (!url) {
-    // No backend URL set — show empty state prompting user to connect
-    renderDashboard();
-    populateAISelect();
-    renderLiveRankings();
-    return;
-  }
+const BACKEND_URL = 'https://campus-offer-decline-predictor-backend.onrender.com';
+let _retryCount = 0;
+let _retryTimer = null;
 
+function getBackendUrl() { return BACKEND_URL; }
+
+async function autoFetchFromBackend() {
   const status = document.getElementById('backendStatus');
   const btn = document.getElementById('refreshBtn');
+
+  // Show waking up message with countdown
+  const isFirstTry = _retryCount === 0;
   status.className = 'api-status api-empty';
-  status.textContent = 'LOADING...';
-  btn.textContent = '↻ LOADING...';
-  btn.disabled = true;
+  status.textContent = isFirstTry ? 'WAKING UP...' : `RETRYING (${_retryCount})...`;
+  if (btn) { btn.textContent = '↻ LOADING...'; btn.disabled = true; }
 
   try {
-    const resp = await fetch(`${url}/score`);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+    const resp = await fetch(`${BACKEND_URL}/score`, { signal: controller.signal });
+    clearTimeout(timeout);
+
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const data = await resp.json();
 
@@ -1802,24 +1803,58 @@ async function autoFetchFromBackend() {
       if (data.weights) Object.assign(WEIGHTS, data.weights);
 
       LIVE_MODE = true;
+      _retryCount = 0;
+      if (_retryTimer) { clearInterval(_retryTimer); _retryTimer = null; }
+
       status.className = 'api-status api-ok';
       status.textContent = `✓ LIVE · ${data.total} candidates`;
 
-      // Update header count
       const hdr = document.querySelector('.header-meta span');
       if (hdr) hdr.textContent = `2026 COHORT · ${data.total} CANDIDATES`;
+
+      if (btn) { btn.textContent = '↻ REFRESH'; btn.disabled = false; }
+      renderDashboard();
+      populateAISelect();
+      renderLiveRankings();
+      return true; // success
     }
   } catch(e) {
-    status.className = 'api-status api-bad';
-    status.textContent = '✗ UNREACHABLE';
-    console.warn('Backend fetch failed:', e.message);
+    console.warn(`Fetch attempt ${_retryCount + 1} failed:`, e.message);
   }
 
-  btn.textContent = '↻ REFRESH';
-  btn.disabled = false;
-  renderDashboard();
-  populateAISelect();
-  renderLiveRankings();
+  // Failed — update status with retry countdown
+  _retryCount++;
+  status.className = 'api-status api-bad';
+
+  if (_retryCount <= 6) {
+    // Auto-retry up to 6 times (covers ~60s wake-up window)
+    let countdown = 10;
+    status.textContent = `WAKING UP... retry in ${countdown}s`;
+    const countdownTimer = setInterval(() => {
+      countdown--;
+      status.textContent = `WAKING UP... retry in ${countdown}s`;
+      if (countdown <= 0) clearInterval(countdownTimer);
+    }, 1000);
+
+    if (btn) { btn.textContent = '↻ REFRESH'; btn.disabled = false; }
+
+    _retryTimer = setTimeout(() => autoFetchFromBackend(), 10000);
+  } else {
+    // Give up after 6 retries
+    status.textContent = '✗ OFFLINE — click REFRESH';
+    if (btn) { btn.textContent = '↻ REFRESH'; btn.disabled = false; }
+    renderDashboard();
+    populateAISelect();
+    renderLiveRankings();
+  }
+  return false;
+}
+
+// Manual refresh resets retry counter
+async function refreshFromBackend() {
+  _retryCount = 0;
+  if (_retryTimer) { clearInterval(_retryTimer); _retryTimer = null; }
+  await autoFetchFromBackend();
 }
 
 // Restore saved API key if any
