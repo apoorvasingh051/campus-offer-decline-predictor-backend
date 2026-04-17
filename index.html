@@ -1005,7 +1005,7 @@
           <div class="panel section">
             <div class="panel-header">
               <span class="panel-title">LIVE RECALCULATION</span>
-              <span class="panel-meta" id="liveHighCount">— HIGH RISK</span>
+              <span class="panel-meta">TOP 20 BY SCORE</span>
             </div>
             <div id="liveRankings" style="max-height:300px;overflow-y:auto;"></div>
           </div>
@@ -1408,7 +1408,6 @@ function updateWeight(key, val) {
 function renderLiveRankings() {
   const all = scoredCandidates();
   const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  document.getElementById('liveHighCount').textContent = `${high.length} HIGH RISK`;
   
   document.getElementById('liveRankings').innerHTML = all.slice(0, 20).map((c, i) => {
     const color = riskColor(c.risk_pct);
