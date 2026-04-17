@@ -866,6 +866,17 @@
 
     <!-- SIGNAL WEIGHTS TAB -->
     <div class="tab-content" id="tab-weights">
+
+      <!-- SAVE BAR -->
+      <div class="panel section" style="margin-bottom:16px;">
+        <div class="api-section">
+          <span style="font-size:11px;color:var(--text2);flex:1;">Adjust sliders below then click Save — weights are stored on the backend and loaded for everyone who opens this link.</span>
+          <span id="saveStatus" class="api-status api-empty" style="display:none;"></span>
+          <button class="btn btn-primary" onclick="saveWeightsToBackend()" id="saveWeightsBtn">💾 SAVE WEIGHTS FOR ALL</button>
+          <button class="btn btn-ghost" onclick="resetWeights()">↺ RESET TO DEFAULTS</button>
+        </div>
+      </div>
+
       <div class="grid-2 section">
         <div class="panel">
           <div class="panel-header">
@@ -1745,6 +1756,7 @@ async function refreshFromBackend() {
 }
 
 async function pushWeightsToBackend(weights) {
+  // Silent background sync — called on every slider change
   const url = getBackendUrl();
   if (!url || !LIVE_MODE) return;
   try {
@@ -1756,6 +1768,107 @@ async function pushWeightsToBackend(weights) {
   } catch(e) {
     console.warn('Could not push weights to backend:', e.message);
   }
+}
+
+async function saveWeightsToBackend() {
+  // Explicit save — persists weights for ALL users
+  const btn = document.getElementById('saveWeightsBtn');
+  const status = document.getElementById('saveStatus');
+  const url = getBackendUrl();
+
+  if (!url || !LIVE_MODE) {
+    showToast('⚠ Connect to backend first (hit Refresh on Dashboard)');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'SAVING...';
+  status.style.display = 'flex';
+  status.className = 'api-status api-empty';
+  status.textContent = 'SAVING...';
+
+  // Combine profile weights + engagement weights into one payload
+  const allWeights = {
+    ...WEIGHTS,
+    eng_jf_yes: ENG_WEIGHTS.jf_yes, eng_jf_no: ENG_WEIGHTS.jf_no,
+    eng_sw_yes: ENG_WEIGHTS.sw_yes, eng_sw_no: ENG_WEIGHTS.sw_no,
+    eng_gk_yes: ENG_WEIGHTS.gk_yes, eng_gk_no: ENG_WEIGHTS.gk_no,
+    eng_ga_yes: ENG_WEIGHTS.ga_yes, eng_ga_no: ENG_WEIGHTS.ga_no,
+    eng_li_mention: ENG_WEIGHTS.li_mention,
+    eng_li_lc: ENG_WEIGHTS.li_lc, eng_li_c: ENG_WEIGHTS.li_c, eng_li_l: ENG_WEIGHTS.li_l,
+    eng_call_pos_strong: ENG_WEIGHTS.call_pos_strong,
+    eng_call_pos_mild: ENG_WEIGHTS.call_pos_mild,
+    eng_call_ghost: ENG_WEIGHTS.call_ghost,
+    eng_call_mba: ENG_WEIGHTS.call_mba,
+    eng_call_ppo: ENG_WEIGHTS.call_ppo,
+    eng_call_risky: ENG_WEIGHTS.call_risky,
+    eng_critical_threshold: ENG_WEIGHTS.eng_critical_threshold,
+    eng_risky_threshold: ENG_WEIGHTS.eng_risky_threshold,
+  };
+
+  try {
+    const resp = await fetch(`${url}/weights/save`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(allWeights)
+    });
+
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    status.className = 'api-status api-ok';
+    status.textContent = '✓ SAVED FOR ALL';
+    showToast('✓ Weights saved — everyone will load these on next refresh');
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
+  } catch(e) {
+    status.className = 'api-status api-bad';
+    status.textContent = '✗ SAVE FAILED';
+    showToast(`Save failed: ${e.message}`);
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
+  }
+
+  btn.disabled = false;
+  btn.textContent = '💾 SAVE WEIGHTS FOR ALL';
+}
+
+function resetWeights() {
+  // Reset to calibrated defaults
+  const defaults = {
+    tier1: 18, tier2: 10, other: 5, tech: 10,
+    cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
+    intern6m: 10, intern_tier1: 12,
+    eng_critical: 30, eng_risky: 14, eng_safe: -15,
+    threshold: 68, medium_threshold: 58
+  };
+  const engDefaults = {
+    jf_yes: 4, jf_no: -3, sw_yes: 1, sw_no: -1,
+    gk_yes: 2, gk_no: -1, ga_yes: 2, ga_no: -0.5,
+    li_mention: 3, li_lc: 2, li_c: 1.5, li_l: 1,
+    call_pos_strong: 5, call_pos_mild: 3,
+    call_ghost: -6, call_mba: -4, call_ppo: -4, call_risky: -2,
+    eng_critical_threshold: 4, eng_risky_threshold: 10
+  };
+
+  Object.assign(WEIGHTS, defaults);
+  Object.assign(ENG_WEIGHTS, engDefaults);
+
+  // Sync all sliders and display values
+  Object.entries(defaults).forEach(([k, v]) => {
+    const el = document.getElementById('wt_' + k);
+    if (el) el.textContent = v;
+    const slider = document.querySelector(`input[oninput*="'${k}'"]`);
+    if (slider) slider.value = v;
+  });
+  Object.entries(engDefaults).forEach(([k, v]) => {
+    const el = document.getElementById('ew_' + k);
+    if (el) el.textContent = v > 0 ? '+' + v : v;
+    const slider = document.querySelector(`input[oninput*="'${k}'"]`);
+    if (slider) slider.value = v;
+  });
+
+  renderDashboard();
+  renderLiveRankings();
+  showToast('↺ Reset to calibrated defaults');
 }
 
 async function pushOutcomeToBackend(name, outcome) {
@@ -1846,6 +1959,27 @@ async function autoFetchFromBackend() {
       }));
 
       if (data.weights) Object.assign(WEIGHTS, data.weights);
+
+      // Restore saved weights from backend if available
+      if (data.weights) {
+        const w = data.weights;
+        Object.keys(WEIGHTS).forEach(k => { if (w[k] !== undefined) WEIGHTS[k] = w[k]; });
+        // Restore eng weights (stored with eng_ prefix)
+        Object.keys(ENG_WEIGHTS).forEach(k => {
+          if (w['eng_' + k] !== undefined) ENG_WEIGHTS[k] = w['eng_' + k];
+        });
+        // Sync sliders
+        Object.entries(WEIGHTS).forEach(([k, v]) => {
+          const el = document.getElementById('wt_' + k);
+          if (el) el.textContent = v;
+          const slider = document.querySelector(`input[oninput*="updateWeight('${k}'"]`);
+          if (slider) slider.value = v;
+        });
+        Object.entries(ENG_WEIGHTS).forEach(([k, v]) => {
+          const el = document.getElementById('ew_' + k);
+          if (el) el.textContent = v > 0 ? '+' + v : v;
+        });
+      }
 
       LIVE_MODE = true;
       _retryCount = 0;
