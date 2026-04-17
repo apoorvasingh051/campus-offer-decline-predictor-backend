@@ -711,6 +711,11 @@
 
     <!-- DASHBOARD TAB -->
     <div class="tab-content active" id="tab-dashboard">
+      <div id="emptyState" style="display:none;text-align:center;padding:60px 20px;color:var(--text3);">
+        <div style="font-size:32px;margin-bottom:12px;">📡</div>
+        <div style="font-family:var(--font-display);font-size:16px;color:var(--text2);margin-bottom:8px;">No backend connected</div>
+        <div style="font-size:12px;">Enter your Render backend URL above and click ↻ REFRESH to load live data from your Google Sheet</div>
+      </div>
       <div class="kpi-strip section" id="kpiStrip"></div>
 
       <div class="grid-2 section">
@@ -1150,39 +1155,7 @@ def record_outcome(data: dict):
 // =====================================================================
 const CONFIRMED_DECLINES = ["Lakshya Jain", "Aakash Kumar Singh", "Arvind Vidhyashankar"];
 
-const CANDIDATES_RAW = [
-  {name:"Aditya Raj Jain",college:"IIT Roorkee",tier:1,role:"SA-BMT",cgpa:8.2,intern_months:2,intern_tier:0,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:1,called:true,call_risk:0,doj:"May",call_note:""},
-  {name:"Harsh Singh",college:"IIT Kharagpur",tier:1,role:"SDE-I",cgpa:8.1,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:true,call_risk:-1,doj:"May",call_note:"Some concerns"},
-  {name:"Debangan Mishra",college:"IIIT Hyderabad",tier:1,role:"MLE-I",cgpa:8.7,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:1,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Lakshya Jain",college:"IIT Roorkee",tier:1,role:"SA-BMT",cgpa:8.5,intern_months:6,intern_tier:1,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:true,call_risk:-3,doj:"Jun",call_note:"PPO from FAANG, not picking up",actual:"declined"},
-  {name:"Raksha Suman Raghuram",college:"BITS Pilani",tier:1,role:"SA-BMT",cgpa:7.8,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jul",call_note:""},
-  {name:"Shubh Seksaria",college:"IIT Roorkee",tier:1,role:"SA-BMT",cgpa:7.9,intern_months:2,intern_tier:0,joining_form:0,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Arhat Amitabh",college:"IIT Kharagpur",tier:1,role:"DS-I",cgpa:8.3,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"VIBHANSHU BHAGAT",college:"BITS Hyderabad",tier:1,role:"SA-BMT",cgpa:7.5,intern_months:2,intern_tier:0,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jul",call_note:""},
-  {name:"Kriti Thacker",college:"BITS Goa",tier:1,role:"SA-BMT",cgpa:8.1,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:1,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jul",call_note:""},
-  {name:"ABHISHEK SINHA",college:"IIT Roorkee",tier:1,role:"DS-I",cgpa:8.0,intern_months:2,intern_tier:0,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Pranav Jha",college:"IIT (ISM) Dhanbad",tier:1,role:"SA-BMT",cgpa:8.4,intern_months:6,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Kothapalli Santosh",college:"IIT BHU",tier:1,role:"SDE-I",cgpa:8.2,intern_months:6,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Dola Deepak",college:"IIT Madras",tier:1,role:"DS-I",cgpa:8.6,intern_months:2,intern_tier:0,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:1,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Arvind Vidhyashankar",college:"IIT Madras",tier:1,role:"SA-BMT",cgpa:7.6,intern_months:2,intern_tier:1,joining_form:1,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:true,call_risk:-2,doj:"May",call_note:"Risky, competing offer signals",actual:"declined"},
-  {name:"Akanksh C J",college:"IIT Madras",tier:1,role:"SA-BMT",cgpa:8.0,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Krunal Mistry",college:"IISc Bangalore",tier:1,role:"MLE-I",cgpa:8.8,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jul",call_note:""},
-  {name:"Parth Deepak Badgujar",college:"IIT Roorkee",tier:1,role:"DS-I",cgpa:7.8,intern_months:2,intern_tier:0,joining_form:0,swag_form:1,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Aakash Kumar Singh",college:"IISc Bangalore",tier:1,role:"DS-I",cgpa:9.1,intern_months:6,intern_tier:1,joining_form:0,swag_form:0,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:true,call_risk:-4,doj:"May",call_note:"Not reachable after multiple attempts, working at Morgan Stanley",actual:"declined"},
-  {name:"Suraj Sai Praneeth",college:"IISc Bangalore",tier:1,role:"DS-I",cgpa:8.5,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jul",call_note:""},
-  {name:"Sreehitha Basireddy",college:"IIT Guwahati",tier:1,role:"SDE-I",cgpa:8.4,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Abhinav Mittal",college:"IIT Guwahati",tier:1,role:"SDE-I",cgpa:8.1,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Anjali Samudrala",college:"IIT Madras",tier:1,role:"SDE-I",cgpa:8.3,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Jashwanth Kakara",college:"IIT Bombay",tier:1,role:"SDE-I",cgpa:8.0,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:0,gmeet_a:0,li_mention:0,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Haren Sathvik Boya",college:"IIT Bombay",tier:1,role:"SDE-I",cgpa:7.9,intern_months:2,intern_tier:0,joining_form:1,swag_form:0,gmeet_k:1,gmeet_a:0,li_mention:0,li_lc:0,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Rohan Mehta",college:"NIT Trichy",tier:2,role:"SDE-I",cgpa:8.5,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:1,li_lc:1,li_c:0,li_l:0,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Priya Sharma",college:"NIT Warangal",tier:2,role:"SDE-I",cgpa:8.2,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:0,li_mention:1,li_lc:0,li_c:0,li_l:1,called:false,call_risk:0,doj:"May",call_note:""},
-  {name:"Vikram Nair",college:"BITS Hyderabad",tier:1,role:"MLE-I",cgpa:8.6,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:1,li_lc:1,li_c:1,li_l:0,called:true,call_risk:3,doj:"Jul",call_note:"Very excited, confirmed joining"},
-  {name:"Sneha Patel",college:"IIT Gandhinagar",tier:1,role:"DS-I",cgpa:8.3,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:1,li_lc:0,li_c:0,li_l:1,called:false,call_risk:0,doj:"Jun",call_note:""},
-  {name:"Aman Gupta",college:"IIT Delhi",tier:1,role:"SDE-I",cgpa:8.7,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:1,li_lc:1,li_c:1,li_l:1,called:true,call_risk:5,doj:"May",call_note:"Dream company, very enthusiastic"},
-  {name:"Kavya Reddy",college:"IIT Hyderabad",tier:1,role:"SDE-I",cgpa:8.4,intern_months:2,intern_tier:0,joining_form:1,swag_form:1,gmeet_k:1,gmeet_a:1,li_mention:0,li_lc:1,li_c:0,li_l:1,called:false,call_risk:0,doj:"Jun",call_note:""},
-];
-
+let CANDIDATES_RAW = [];  // populated from backend on load
 // =====================================================================
 // WEIGHTS (mutable)
 // =====================================================================
@@ -1387,6 +1360,15 @@ function switchTab(tab) {
 // RENDER DASHBOARD
 // =====================================================================
 function renderDashboard() {
+  const emptyState = document.getElementById('emptyState');
+  const kpiStrip = document.getElementById('kpiStrip');
+  if (CANDIDATES_RAW.length === 0) {
+    if (emptyState) emptyState.style.display = 'block';
+    if (kpiStrip) kpiStrip.style.display = 'none';
+    return;
+  }
+  if (emptyState) emptyState.style.display = 'none';
+  if (kpiStrip) kpiStrip.style.display = 'grid';
   const all = scoredCandidates();
   const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
   const medium = all.filter(c => c.risk_pct >= 40 && c.risk_pct < WEIGHTS.threshold);
@@ -1862,10 +1844,93 @@ function populateAISelect() {
   sel.innerHTML = high.map(c => `<option value="${c.name}">${c.name} — ${c.risk_pct}% — ${c.college}</option>`).join('');
 }
 
-// Boot
-renderDashboard();
-populateAISelect();
-renderLiveRankings();
+// =====================================================================
+// AUTO-FETCH ON LOAD
+// =====================================================================
+async function autoFetchFromBackend() {
+  const url = getBackendUrl();
+  if (!url) {
+    // No backend URL set — show empty state prompting user to connect
+    renderDashboard();
+    populateAISelect();
+    renderLiveRankings();
+    return;
+  }
+
+  const status = document.getElementById('backendStatus');
+  const btn = document.getElementById('refreshBtn');
+  status.className = 'api-status api-empty';
+  status.textContent = 'LOADING...';
+  btn.textContent = '↻ LOADING...';
+  btn.disabled = true;
+
+  try {
+    const resp = await fetch(`${url}/score`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    if (data.candidates && data.candidates.length > 0) {
+      data.candidates.forEach(c => {
+        if (c.outcome) OUTCOMES[c.name] = c.outcome;
+      });
+
+      CANDIDATES_RAW.length = 0;
+      data.candidates.forEach(c => CANDIDATES_RAW.push({
+        name: c.name,
+        college: c.college || '',
+        tier: c.tier || 2,
+        role: c.role || 'Other',
+        cgpa: c.cgpa || 7.5,
+        intern_months: c.intern_months || 2,
+        intern_tier: c.intern_tier || 0,
+        joining_form: c.joining_form || 0,
+        swag_form: c.swag_form || 0,
+        gmeet_k: c.gmeet_k || 0,
+        gmeet_a: c.gmeet_a || 0,
+        li_mention: c.li_mention || 0,
+        li_lc: c.li_lc || 0,
+        li_c: c.li_c || 0,
+        li_l: c.li_l || 0,
+        called: c.called || false,
+        call_risk: c.call_risk || 0,
+        doj: c.doj || 'Jul',
+        call_note: c.call_note || '',
+      }));
+
+      if (data.weights) Object.assign(WEIGHTS, data.weights);
+
+      LIVE_MODE = true;
+      status.className = 'api-status api-ok';
+      status.textContent = `✓ LIVE · ${data.total} candidates`;
+
+      // Update header count
+      const hdr = document.querySelector('.header-meta span');
+      if (hdr) hdr.textContent = `2026 COHORT · ${data.total} CANDIDATES`;
+    }
+  } catch(e) {
+    status.className = 'api-status api-bad';
+    status.textContent = '✗ UNREACHABLE';
+    console.warn('Backend fetch failed:', e.message);
+  }
+
+  btn.textContent = '↻ REFRESH';
+  btn.disabled = false;
+  renderDashboard();
+  populateAISelect();
+  renderLiveRankings();
+}
+
+// Read backend URL from localStorage if previously set
+const savedUrl = localStorage.getItem('meesho_backend_url');
+if (savedUrl) document.getElementById('backendUrl').value = savedUrl;
+
+// Save URL to localStorage whenever it changes
+document.getElementById('backendUrl').addEventListener('change', function() {
+  localStorage.setItem('meesho_backend_url', this.value);
+});
+
+// Boot — auto-fetch immediately
+autoFetchFromBackend();
 </script>
 </body>
 </html>
