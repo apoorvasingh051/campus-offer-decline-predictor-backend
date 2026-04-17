@@ -724,21 +724,18 @@
 
   <div class="main">
 
-    <!-- CONNECTION BAR (always visible) -->
+    <!-- STATUS BAR (always visible) -->
     <div class="panel section" style="margin-bottom:16px;">
       <div class="api-section">
-        <span style="font-size:10px;color:var(--text3);white-space:nowrap;">BACKEND URL</span>
-        <input type="text" class="api-input" id="backendUrl" placeholder="https://meesho-predictor-backend.onrender.com  (leave blank to use built-in data)" oninput="validateBackend()" style="font-size:11px;">
-        <span class="api-status api-empty" id="backendStatus">OFFLINE</span>
+        <span style="font-size:10px;color:var(--text3);white-space:nowrap;">DATA SOURCE</span>
+        <span style="font-size:11px;color:var(--text2);flex:1;">campus-offer-decline-predictor-backend.onrender.com</span>
+        <span class="api-status api-empty" id="backendStatus">CONNECTING...</span>
         <button class="btn btn-ghost" onclick="refreshFromBackend()" id="refreshBtn">↻ REFRESH</button>
       </div>
-      <div class="api-section" style="border-top:1px solid var(--border);">
-        <span style="font-size:10px;color:var(--text3);white-space:nowrap;">ANTHROPIC API KEY</span>
-        <input type="password" class="api-input" id="apiKey" placeholder="sk-ant-..." oninput="validateKey()">
-        <span class="api-status api-empty" id="apiStatus">NO KEY</span>
-        <button class="btn btn-ghost" onclick="document.getElementById('apiKey').type = document.getElementById('apiKey').type === 'password' ? 'text' : 'password'">SHOW</button>
-      </div>
     </div>
+    <!-- Hidden inputs still needed for JS functions -->
+    <input type="hidden" id="backendUrl" style="display:none;" value="https://campus-offer-decline-predictor-backend.onrender.com">
+    <input type="hidden" id="apiKey" style="display:none;" value="">
 
     <!-- DASHBOARD TAB -->
     <div class="tab-content active" id="tab-dashboard">
@@ -997,6 +994,14 @@
 
     <!-- AI ANALYZER TAB -->
     <div class="tab-content" id="tab-ai">
+      <div class="panel section" style="margin-bottom:16px;">
+        <div class="api-section">
+          <span style="font-size:10px;color:var(--text3);white-space:nowrap;">ANTHROPIC API KEY</span>
+          <input type="password" class="api-input" id="apiKeyVisible" placeholder="sk-ant-api03-... (required for AI recommendations)" oninput="syncApiKey(this.value)">
+          <span class="api-status api-empty" id="apiStatus">NO KEY</span>
+          <button class="btn btn-ghost" onclick="toggleApiKeyVisibility()">SHOW</button>
+        </div>
+      </div>
       <div class="grid-2 section">
         <div class="panel">
           <div class="panel-header">
@@ -1453,15 +1458,31 @@ function closeDetail() {
 // AI RECOMMENDATION
 // =====================================================================
 function getApiKey() {
-  return document.getElementById('apiKey').value.trim();
+  const visible = document.getElementById('apiKeyVisible');
+  const hidden = document.getElementById('apiKey');
+  return (visible && visible.value.trim()) || (hidden && hidden.value.trim()) || '';
 }
 
 function validateKey() {
   const key = getApiKey();
   const status = document.getElementById('apiStatus');
+  if (!status) return;
   if (!key) { status.className = 'api-status api-empty'; status.textContent = 'NO KEY'; }
   else if (key.startsWith('sk-ant-')) { status.className = 'api-status api-ok'; status.textContent = '✓ READY'; }
   else { status.className = 'api-status api-bad'; status.textContent = '⚠ CHECK FORMAT'; }
+}
+
+function syncApiKey(val) {
+  // Sync the visible AI tab key input to the hidden apiKey field
+  document.getElementById('apiKey').value = val;
+  validateKey();
+  // Save to localStorage
+  localStorage.setItem('meesho_api_key', val);
+}
+
+function toggleApiKeyVisibility() {
+  const el = document.getElementById('apiKeyVisible');
+  if (el) el.type = el.type === 'password' ? 'text' : 'password';
 }
 
 async function callClaude(prompt) {
@@ -1604,14 +1625,7 @@ function getBackendUrl() {
 }
 
 function validateBackend() {
-  const url = getBackendUrl();
-  const status = document.getElementById('backendStatus');
-  if (!url) {
-    status.className = 'api-status api-empty'; status.textContent = 'OFFLINE';
-    LIVE_MODE = false;
-  } else {
-    status.className = 'api-status api-empty'; status.textContent = 'CHECKING...';
-  }
+  // Backend URL is now hardcoded - nothing to validate
 }
 
 async function refreshFromBackend() {
@@ -1808,16 +1822,15 @@ async function autoFetchFromBackend() {
   renderLiveRankings();
 }
 
-// Read backend URL from localStorage if previously set
-const savedUrl = localStorage.getItem('meesho_backend_url');
-if (savedUrl) document.getElementById('backendUrl').value = savedUrl;
+// Restore saved API key if any
+const savedKey = localStorage.getItem('meesho_api_key');
+if (savedKey) {
+  const visibleEl = document.getElementById('apiKeyVisible');
+  if (visibleEl) visibleEl.value = savedKey;
+  document.getElementById('apiKey').value = savedKey;
+}
 
-// Save URL to localStorage whenever it changes
-document.getElementById('backendUrl').addEventListener('change', function() {
-  localStorage.setItem('meesho_backend_url', this.value);
-});
-
-// Boot — auto-fetch immediately
+// Boot — auto-fetch immediately (URL is hardcoded)
 autoFetchFromBackend();
 </script>
 </body>
