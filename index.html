@@ -767,7 +767,7 @@
       <!-- HIGH RISK TOP 10 -->
       <div class="panel section">
         <div class="panel-header">
-          <span class="panel-title" style="color:var(--accent)">🔴 TOP 10 HIGH RISK — ACT NOW</span>
+          <span class="panel-title" style="color:var(--accent)">🔴 TOP 10 HIGH RISK · confirmed declines shown as ✓ validation</span>
           <div class="legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>MAY</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>JUN</div>
@@ -1286,8 +1286,7 @@ function renderDashboard() {
   if (emptyState) emptyState.style.display = 'none';
   if (kpiStrip) kpiStrip.style.display = 'grid';
   const all = scoredCandidates();
-  // Exclude confirmed declines from risk lists — they've already churned
-  const active = all.filter(c => !OUTCOMES[c.name] || OUTCOMES[c.name] !== 'declined');
+  const active = all; // include declined — they validate model accuracy
   const high = active.filter(c => c.risk_pct >= WEIGHTS.threshold).slice(0, 10);
   const medium = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold).slice(0, 30);
   const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
