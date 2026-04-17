@@ -3,25 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Campus Offer Decline Predictor · Meesho 2026</title>
+<title>Meesho Campus Offer — Decline Predictor 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0a0a0f;
-    --surface: #111118;
-    --surface2: #18181f;
-    --border: #2a2a35;
-    --border2: #3a3a48;
-    --text: #e8e8f0;
-    --text2: #9090a8;
-    --text3: #5a5a70;
-    --accent: #f5431d;
-    --accent2: #ff6b47;
-    --amber: #f5a623;
-    --green: #22c55e;
-    --blue: #3b82f6;
-    --purple: #a855f7;
-    --red: #ef4444;
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --surface2: #eef1f8;
+    --border: #d8def0;
+    --border2: #b8c2e0;
+    --text: #13192e;
+    --text2: #3a4468;
+    --text3: #7a84aa;
+    --accent: #e8321a;
+    --accent2: #ff5c3a;
+    --amber: #c97010;
+    --green: #1a8a3c;
+    --blue: #1a5fd4;
+    --purple: #6c2bd9;
+    --red: #cc1a1a;
+    --teal: #0e8a7a;
+    --pink: #d4267a;
     --font-display: 'Syne', sans-serif;
     --font-mono: 'DM Mono', monospace;
   }
@@ -29,7 +31,7 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: var(--bg);
+    background: linear-gradient(135deg, #eef2ff 0%, #f5f0ff 40%, #fff0f6 100%);
     color: var(--text);
     font-family: var(--font-mono);
     font-size: 13px;
@@ -46,7 +48,7 @@
       linear-gradient(var(--border) 1px, transparent 1px),
       linear-gradient(90deg, var(--border) 1px, transparent 1px);
     background-size: 40px 40px;
-    opacity: 0.3;
+    opacity: 0.25;
     pointer-events: none;
     z-index: 0;
   }
@@ -61,11 +63,20 @@
     align-items: center;
     justify-content: space-between;
     height: 56px;
-    background: rgba(10,10,15,0.95);
-    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(12px);
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow: 0 1px 0 var(--border), 0 2px 12px rgba(100,120,200,0.08);
+  }
+  
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #e8321a, #c97010, #1a5fd4, #6c2bd9, #1a8a3c);
   }
 
   .logo {
@@ -80,10 +91,11 @@
   }
 
   .logo-dot {
-    width: 8px; height: 8px;
+    width: 10px; height: 10px;
     border-radius: 50%;
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), var(--purple));
     animation: pulse 2s infinite;
+    box-shadow: 0 0 8px rgba(232,50,26,0.4);
   }
 
   @keyframes pulse {
@@ -103,8 +115,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(34,197,94,0.1);
-    border: 1px solid rgba(34,197,94,0.3);
+    background: rgba(56,158,13,0.1);
+    border: 1px solid rgba(56,158,13,0.35);
     padding: 4px 10px;
     border-radius: 20px;
     color: var(--green);
@@ -119,7 +131,8 @@
     gap: 0;
     border-bottom: 1px solid var(--border);
     padding: 0 32px;
-    background: var(--surface);
+    background: rgba(255,255,255,0.95);
+    box-shadow: 0 1px 3px rgba(100,120,200,0.1);
   }
 
   .nav-tab {
@@ -137,7 +150,7 @@
   }
 
   .nav-tab:hover { color: var(--text2); }
-  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 500; }
 
   /* MAIN LAYOUT */
   .main { padding: 24px 32px; max-width: 1400px; margin: 0 auto; }
@@ -160,7 +173,23 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
+    overflow: hidden;
   }
+  
+  .kpi::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  
+  .kpi:nth-child(1)::before { background: var(--blue); }
+  .kpi:nth-child(2)::before { background: var(--accent); }
+  .kpi:nth-child(3)::before { background: var(--amber); }
+  .kpi:nth-child(4)::before { background: var(--green); }
+  .kpi:nth-child(5)::before { background: var(--purple); }
+  .kpi:nth-child(6)::before { background: var(--red); }
 
   .kpi-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; }
   .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
@@ -177,6 +206,7 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
   }
 
   .panel-header {
@@ -185,6 +215,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    background: linear-gradient(90deg, rgba(240,244,255,0.8), rgba(255,255,255,0));
   }
 
   .panel-title {
@@ -212,8 +243,8 @@
     cursor: pointer;
   }
 
-  .candidate-card:hover { background: var(--surface2); }
-  .candidate-card.declined { background: rgba(168, 85, 247, 0.05); }
+  .candidate-card:hover { background: #f8f6f2; }
+  .candidate-card.declined { background: rgba(124, 58, 237, 0.04); border-left: 3px solid var(--purple); }
 
   .rank { color: var(--text3); font-size: 11px; text-align: right; }
 
@@ -227,9 +258,9 @@
     font-weight: 500;
   }
 
-  .risk-critical { background: rgba(245,67,29,0.15); color: var(--accent); border: 1px solid rgba(245,67,29,0.3); }
-  .risk-risky { background: rgba(245,166,35,0.15); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
-  .risk-safe { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+  .risk-critical { background: rgba(212,56,13,0.1); color: var(--accent); border: 1px solid rgba(212,56,13,0.3); }
+  .risk-risky { background: rgba(212,107,8,0.1); color: var(--amber); border: 1px solid rgba(212,107,8,0.3); }
+  .risk-safe { background: rgba(56,158,13,0.1); color: var(--green); border: 1px solid rgba(56,158,13,0.3); }
 
   .candidate-name { font-family: var(--font-display); font-size: 13px; font-weight: 600; }
   .candidate-sub { font-size: 10px; color: var(--text3); margin-top: 2px; }
@@ -334,7 +365,7 @@
     border-radius: 50%;
     background: var(--accent);
     cursor: pointer;
-    box-shadow: 0 0 6px rgba(245,67,29,0.4);
+    box-shadow: 0 1px 4px rgba(212,56,13,0.3);
   }
 
   /* API KEY SECTION */
@@ -348,7 +379,7 @@
 
   .api-input {
     flex: 1;
-    background: var(--bg);
+    background: rgba(255,255,255,0.9);
     border: 1px solid var(--border2);
     border-radius: 6px;
     padding: 8px 12px;
@@ -402,7 +433,7 @@
 
   /* AI RESPONSE BOX */
   .ai-box {
-    background: var(--bg);
+    background: rgba(255,255,255,0.9);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 14px;
@@ -507,7 +538,7 @@
   /* SEARCH */
   .search-input {
     width: 100%;
-    background: var(--bg);
+    background: rgba(255,255,255,0.9);
     border: 1px solid var(--border2);
     border-radius: 6px;
     padding: 10px 16px;
@@ -546,7 +577,7 @@
 
   /* DYNAMIC BACKEND SECTION */
   .architecture-block {
-    background: var(--bg);
+    background: rgba(255,255,255,0.9);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 20px;
@@ -614,7 +645,7 @@
 
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-track { background: var(--surface2); }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
 
   .tab-content { display: none; }
@@ -659,7 +690,7 @@
   .bar-row { display: grid; grid-template-columns: 120px 1fr 40px; gap: 10px; align-items: center; }
   .bar-label { font-size: 11px; color: var(--text2); text-align: right; }
   .bar-track { background: var(--border2); height: 6px; border-radius: 3px; overflow: hidden; }
-  .bar-fill { height: 100%; border-radius: 3px; background: var(--accent); transition: width 0.6s ease; }
+  .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--purple)); transition: width 0.6s ease; }
   .bar-count { font-size: 11px; color: var(--text3); }
 </style>
 </head>
@@ -670,7 +701,7 @@
   <header>
     <div class="logo">
       <div class="logo-dot"></div>
-      MEESHO CAMPUS PREDICTOR
+      MEESHO CAMPUS OFFER — DECLINE PREDICTOR
     </div>
     <div class="header-meta">
       <span>2026 COHORT · 245 CANDIDATES</span>
@@ -688,7 +719,7 @@
     <button class="nav-tab" onclick="switchTab('search')">CANDIDATE SEARCH</button>
     <button class="nav-tab" onclick="switchTab('weights')">SIGNAL WEIGHTS</button>
     <button class="nav-tab" onclick="switchTab('ai')">AI ANALYZER</button>
-    <button class="nav-tab" onclick="switchTab('backend')">MAKE IT DYNAMIC →</button>
+
   </nav>
 
   <div class="main">
@@ -972,7 +1003,7 @@
             <span class="panel-title">SINGLE CANDIDATE ADVISOR</span>
           </div>
           <div style="padding:20px;">
-            <select id="aiCandidateSelect" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:12px;margin-bottom:12px;outline:none;"></select>
+            <select id="aiCandidateSelect" style="width:100%;background:#fafaf8;border:1px solid var(--border2);border-radius:6px;padding:8px 12px;color:var(--text);font-family:var(--font-mono);font-size:12px;margin-bottom:12px;outline:none;"></select>
             <button class="btn btn-primary" onclick="getAIRecommendation()" id="aiSingleBtn">GET AI RECOMMENDATION</button>
             <div id="aiSingleResult"></div>
           </div>
@@ -993,150 +1024,7 @@
       </div>
     </div>
 
-    <!-- DYNAMIC BACKEND TAB -->
-    <div class="tab-content" id="tab-backend">
-      <div class="grid-2 section">
-        <div>
-          <div class="panel section">
-            <div class="panel-header">
-              <span class="panel-title">HOW TO MAKE THIS DYNAMIC</span>
-            </div>
-            <div class="architecture-block" style="border:none;border-radius:0;">
-              <div class="arch-step">
-                <div class="arch-num">1</div>
-                <div class="arch-content">
-                  <h4>Google Sheets as Live Database</h4>
-                  <p>Your 2026 tracker stays in Google Sheets. Any recruiter updates (new call notes, form submissions, Gmeet attendance) go there directly — no new tools. Connect via <code>Google Sheets API</code> to pull fresh data on demand. This means real-time updates without changing anyone's workflow.</p>
-                </div>
-              </div>
-              <div class="arch-step">
-                <div class="arch-num">2</div>
-                <div class="arch-content">
-                  <h4>FastAPI Backend (Python, ~100 lines)</h4>
-                  <p>A lightweight Python server runs the scoring logic. Endpoints: <code>GET /score</code> returns ranked candidates, <code>POST /weights</code> accepts new weight values and returns re-scored list instantly, <code>POST /outcome</code> records a joined/declined result. Deploy free on <code>Railway.app</code> or <code>Render.com</code>.</p>
-                </div>
-              </div>
-              <div class="arch-step">
-                <div class="arch-num">3</div>
-                <div class="arch-content">
-                  <h4>Weights Stored in Config File</h4>
-                  <p>Signal weights live in a <code>weights.json</code> file on the server. When you move a slider in this UI, it calls <code>POST /weights</code>, updates the file, re-scores all 245 candidates, and returns the new ranked list — all in under 200ms. No model retraining needed.</p>
-                </div>
-              </div>
-              <div class="arch-step">
-                <div class="arch-num">4</div>
-                <div class="arch-content">
-                  <h4>Outcome Feedback Loop</h4>
-                  <p>Every time you mark a candidate as joined/declined via the Candidate Search tab, it writes to a <code>outcomes.csv</code> file. After 3 more cohort cycles, you'll have ~600 labelled rows — enough to train a real XGBoost model that learns weights from data rather than manual calibration. The current rule-based system is the bridge to get there.</p>
-                </div>
-              </div>
-              <div class="arch-step">
-                <div class="arch-num">5</div>
-                <div class="arch-content">
-                  <h4>Weekly Email Digest (Optional)</h4>
-                  <p>A cron job runs every Monday, pulls the latest sheet data, re-scores everyone, and emails the top-10 high-risk list to your team. Uses <code>SendGrid</code> free tier. Zero manual work after setup.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
-        <div>
-          <div class="panel section">
-            <div class="panel-header">
-              <span class="panel-title">ARCHITECTURE DIAGRAM</span>
-            </div>
-            <div style="padding:20px;font-family:var(--font-mono);font-size:11px;line-height:2;color:var(--text2);">
-<pre style="color:var(--text2);font-size:10px;line-height:1.8;overflow-x:auto;">
-┌─────────────────────────────────────────────┐
-│           RECRUITER WORKFLOW                │
-│  Google Sheet  →  Updates call notes,       │
-│  (live data)      form status, Gmeet log    │
-└──────────────────────┬──────────────────────┘
-                       │ Google Sheets API
-                       ▼
-┌─────────────────────────────────────────────┐
-│          FastAPI BACKEND (Python)           │
-│                                             │
-│  GET  /score    → Pulls sheet, scores all   │
-│  POST /weights  → Update weights.json,      │
-│                   re-score, return list      │
-│  POST /outcome  → Write to outcomes.csv     │
-│  GET  /export   → Download risk report      │
-└──────────────┬──────────────────────────────┘
-               │                    │
-               ▼                    ▼
-  ┌────────────────────┐  ┌─────────────────────┐
-  │  THIS WEB APP      │  │  Claude API          │
-  │  (HTML/JS)         │  │  (AI recommendations)│
-  │                    │  │                     │
-  │  Sliders → POST    │  │  Call notes text     │
-  │  /weights          │  │  → risk category +  │
-  │  Live re-rank      │  │  recruiter action    │
-  └────────────────────┘  └─────────────────────┘
-               │
-               ▼
-  ┌────────────────────┐
-  │  outcomes.csv      │
-  │  (builds over time)│
-  │                    │
-  │  Year 3: XGBoost   │
-  │  replaces rules    │
-  └────────────────────┘
-</pre>
-            </div>
-          </div>
-
-          <div class="panel section">
-            <div class="panel-header">
-              <span class="panel-title">BACKEND STARTER CODE</span>
-              <span class="panel-meta">COPY AND DEPLOY</span>
-            </div>
-            <div style="padding:16px;">
-<pre style="font-size:10px;color:var(--accent2);line-height:1.7;overflow-x:auto;background:var(--bg);padding:14px;border-radius:6px;border:1px solid var(--border);"># main.py — FastAPI backend
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import json, pandas as pd
-
-app = FastAPI()
-app.add_middleware(CORSMiddleware,
-    allow_origins=["*"], allow_methods=["*"])
-
-def load_weights():
-    with open("weights.json") as f:
-        return json.load(f)
-
-def score_candidates(df, weights):
-    # Your scoring logic here
-    # Returns sorted DataFrame with risk_pct column
-    pass
-
-@app.get("/score")
-def get_scores():
-    df = pd.read_csv("tracker.csv")  # or Sheets API
-    weights = load_weights()
-    scored = score_candidates(df, weights)
-    return scored.to_dict(orient="records")
-
-@app.post("/weights")
-def update_weights(new_weights: dict):
-    with open("weights.json", "w") as f:
-        json.dump(new_weights, f)
-    df = pd.read_csv("tracker.csv")
-    scored = score_candidates(df, new_weights)
-    return scored.to_dict(orient="records")
-
-@app.post("/outcome")
-def record_outcome(data: dict):
-    # Append to outcomes.csv for future model training
-    with open("outcomes.csv", "a") as f:
-        f.write(f"{data['name']},{data['outcome']}\n")
-    return {"status": "recorded"}</pre>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
   </div><!-- /main -->
 </div><!-- /app -->
@@ -1351,7 +1239,7 @@ function switchTab(tab) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('tab-' + tab).classList.add('active');
-  document.querySelectorAll('.nav-tab')[['dashboard','action','search','weights','ai','backend'].indexOf(tab)].classList.add('active');
+  document.querySelectorAll('.nav-tab')[['dashboard','action','search','weights','ai'].indexOf(tab)].classList.add('active');
   currentTab = tab;
   renderAll();
 }
