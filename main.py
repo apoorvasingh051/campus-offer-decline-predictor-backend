@@ -25,7 +25,7 @@ app.add_middleware(
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-SHEET_ID = "1txsauhdN2PXo-NlgLnyB0dTl6xHuj_pFno3_6PN4UcA"
+SHEET_ID = "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI"
 WEIGHTS_FILE = "weights.json"
 OUTCOMES_FILE = "outcomes.csv"
 
