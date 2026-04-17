@@ -159,13 +159,24 @@ def parse_doj_month(doj: str) -> str:
     return "Jul"
 
 def parse_role(role: str) -> str:
-    r = role.upper() if role else ""
-    if "SDE" in r or "SOFTWARE" in r: return "SDE-I"
-    if "DS" in r or "DATA SCIEN" in r: return "DS-I"
-    if "MLE" in r or "ML ENGIN" in r: return "MLE-I"
-    if "OR" in r or "OPERATIONS RES" in r: return "OR-I"
-    if "SA" in r or "BUSINESS" in r: return "SA-BMT"
-    return role or "Other"
+    """
+    Maps exact sheet role values to internal codes.
+    Sheet values:
+      "Data Scientist - I"                        → DS-I
+      "Senior Associate - Business Management track" → SA-BMT
+      "Software Development Engineer - I"          → SDE-I
+      "MLE-I"                                      → MLE-I
+      "OR Scientist-I"                             → OR-I
+    """
+    r = role.strip() if role else ""
+    ru = r.upper()
+    # Exact / starts-with matches first (most reliable)
+    if ru.startswith("OR SCIENTIST") or ru == "OR-I": return "OR-I"
+    if ru.startswith("MLE") or "MACHINE LEARNING" in ru: return "MLE-I"
+    if "DATA SCIENTIST" in ru or ru.startswith("DS"): return "DS-I"
+    if "SOFTWARE DEVELOPMENT" in ru or ru.startswith("SDE"): return "SDE-I"
+    if "SENIOR ASSOCIATE" in ru or "BUSINESS MANAGEMENT" in ru or "BMT" in ru: return "SA-BMT"
+    return r or "Other"
 
 def parse_offer_status(status: str) -> str:
     """
