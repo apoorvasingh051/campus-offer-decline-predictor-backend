@@ -1136,11 +1136,14 @@ function updateEngWeight(key, val) {
   const display = parseFloat(val) > 0 ? '+' + val : val;
   const el = document.getElementById('ew_' + key);
   if (el) el.textContent = display;
+  renderLiveRankings();
   clearTimeout(window._engWeightTimer);
   window._engWeightTimer = setTimeout(() => {
-    renderAll();
-    renderLiveRankings();
-  }, 200);
+    renderDashboard();
+    renderAction();
+    renderSearch();
+    populateAISelect();
+  }, 350);
 }
 
 function calcRisk(c, weights) {
@@ -1287,36 +1290,38 @@ function renderDashboard() {
   if (kpiStrip) kpiStrip.style.display = 'grid';
   const all = scoredCandidates();
   const active = all; // include declined — they validate model accuracy
-  // Top 10 = simply the 10 highest scoring candidates, no filtering by outcome
-  const top10 = active.slice(0, 10);
-  const high = active.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  const medium = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold).slice(0, 30);
+  // All counts for KPI display
+  const highAll = active.filter(c => c.risk_pct >= WEIGHTS.threshold);
+  const mediumAll = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold);
   const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
+  // Display slices
+  const top10 = active.slice(0, 10);
+  const medium = mediumAll.slice(0, 30);
   const declines = Object.values(OUTCOMES).filter(v => v === 'declined').length;
   const joins = Object.values(OUTCOMES).filter(v => v === 'joined').length;
 
   document.getElementById('kpiStrip').innerHTML = `
     <div class="kpi"><div class="kpi-label">Total Offers</div><div class="kpi-value kpi-blue">${all.length}</div><div class="kpi-sub">2026 cohort</div></div>
-    <div class="kpi"><div class="kpi-label">🔴 High Risk</div><div class="kpi-value kpi-red">${high.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% · act now</div></div>
-    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${medium.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold}–${WEIGHTS.threshold-1}% · monitor</div></div>
-    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold}% · safe</div></div>
+    <div class="kpi"><div class="kpi-label">🔴 High Risk</div><div class="kpi-value kpi-red">${highAll.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% · showing top 10</div></div>
+    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${mediumAll.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold||45}–${WEIGHTS.threshold-1}% · showing top 30</div></div>
+    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold||45}% · safe</div></div>
     <div class="kpi"><div class="kpi-label">Confirmed Declines</div><div class="kpi-value kpi-confirmed">${declines}</div><div class="kpi-sub">from sheet outcomes</div></div>
-    <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${high.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk · ≤6 weeks</div></div>
+    <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${highAll.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk · ≤6 weeks</div></div>
   `;
 
   // Role chart
   const roles = ['SDE-I','DS-I','MLE-I','SA-BMT'];
-  const maxRole = Math.max(...roles.map(r => high.filter(c=>c.role===r).length)) || 1;
+  const maxRole = Math.max(...roles.map(r => highAll.filter(c=>c.role===r).length)) || 1;
   document.getElementById('roleChart').innerHTML = roles.map(r => {
-    const n = high.filter(c=>c.role===r).length;
+    const n = highAll.filter(c=>c.role===r).length;
     return `<div class="bar-row"><div class="bar-label">${r}</div><div class="bar-track"><div class="bar-fill" style="width:${(n/maxRole*100)}%"></div></div><div class="bar-count">${n}</div></div>`;
   }).join('');
 
   // DOJ chart
   const dojGroups = [['May','var(--red)'],['Jun','var(--amber)'],['Jul','var(--blue)']];
-  const maxDoj = Math.max(...dojGroups.map(([d]) => high.filter(c=>c.doj===d).length)) || 1;
+  const maxDoj = Math.max(...dojGroups.map(([d]) => highAll.filter(c=>c.doj===d).length)) || 1;
   document.getElementById('dojChart').innerHTML = dojGroups.map(([d, color]) => {
-    const n = high.filter(c=>c.doj===d).length;
+    const n = highAll.filter(c=>c.doj===d).length;
     return `<div class="bar-row"><div class="bar-label">${d} DOJ</div><div class="bar-track"><div class="bar-fill" style="width:${(n/maxDoj*100)}%;background:${color}"></div></div><div class="bar-count">${n}</div></div>`;
   }).join('');
 
@@ -1330,7 +1335,7 @@ function renderDashboard() {
   if (medEl) medEl.innerHTML = medium.length 
     ? medium.map((c, i) => candidateRow(c, i+1, false)).join('') 
     : '<div style="padding:24px;text-align:center;color:var(--green);font-size:12px;">✓ No medium risk candidates</div>';
-  if (medCount) medCount.textContent = `${medium.length} CANDIDATES`;
+  if (medCount) medCount.textContent = `SHOWING ${medium.length} OF ${mediumAll.length} MEDIUM RISK`;
 }
 
 // =====================================================================
@@ -1396,13 +1401,19 @@ function renderSearch() {
 // =====================================================================
 function updateWeight(key, val) {
   WEIGHTS[key] = parseFloat(val);
-  document.getElementById('wt_' + key).textContent = val;
+  const display = parseFloat(val) >= 0 ? val : val;
+  document.getElementById('wt_' + key).textContent = display;
+  // Immediate re-render of live rankings
   renderLiveRankings();
+  // Debounced full re-render so dashboard, action queue all stay in sync
   clearTimeout(window._weightTimer);
   window._weightTimer = setTimeout(() => {
-    renderAll();
-    pushWeightsToBackend(WEIGHTS);  // sync to backend if connected
-  }, 400);
+    renderDashboard();
+    renderAction();
+    renderSearch();
+    populateAISelect();
+    pushWeightsToBackend(WEIGHTS);
+  }, 350);
 }
 
 function renderLiveRankings() {
