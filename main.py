@@ -32,22 +32,22 @@ OUTCOMES_FILE = "outcomes.csv"
 # Column name mappings from your Google Sheet headers
 # Edit these if your sheet column names differ
 COL_MAP = {
-    "name":          "Candidate Name",
-    "college":       "College",
-    "role":          "Role",
+    "name":          "Name of the Candidate",
+    "college":       "College Name",
+    "role":          "Role offered",
     "cgpa":          "CGPA",
     "doj":           "DOJ",
     "joining_form":  "Google form - Joining Dates",
     "swag_form":     "Google form - SWAG",
-    "gmeet_k":       "Gmeet - Kick off",
+    "gmeet_k":       "Gmeet 1 - Kick off attendance",
     "gmeet_a":       "Gmeet - AMA",
-    "li_mention":    "LI Profile - Meesho",
-    "li_lc":         "LI Post - Liked and Commented",
-    "li_c":          "LI Post - Commented",
-    "li_l":          "LI Post - Liked/Voted",
-    "intern_months": "Internship Type",       # "6M Winter" / "2M Summer"
-    "intern_company":"Internship Company",
-    "calling_data":  "Calling data",
+    "li_mention":    "LI Profile mentions Meesho?",
+    "li_lc":         "LI Post 4 - Meesho Day Zero",
+    "li_c":          "LI Post 2 - Introduction",
+    "li_l":          "LI Post 6 - Founder's letter Poll",
+    "intern_months": "Type of Internship",
+    "intern_company":"Internship company",
+    "calling_data":  "Call Remarks",
 }
 
 # Tier-1 internship companies (PPO / competing offer risk)
