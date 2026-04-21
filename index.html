@@ -867,34 +867,10 @@
       <div class="grid-2 section">
         <div class="panel">
           <div class="panel-header">
-            <span class="panel-title">PROFILE RISK WEIGHTS</span>
+            <span class="panel-title">PROFILE & INTERNSHIP WEIGHTS</span>
             <span class="panel-meta">ADJUST & WATCH RANKINGS UPDATE LIVE</span>
           </div>
 
-          <div class="weight-group">
-            <div class="weight-group-title">COLLEGE TIER</div>
-            <div class="weight-row">
-              <div class="weight-label">IIT / IISc / IIIT-H</div>
-              <div class="weight-val" id="wt_tier1">18</div>
-              <input type="range" min="5" max="30" value="18" oninput="updateWeight('tier1', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
-            <div class="weight-row">
-              <div class="weight-label">NIT / BITS / Other IITs</div>
-              <div class="weight-val" id="wt_tier2">10</div>
-              <input type="range" min="2" max="20" value="10" oninput="updateWeight('tier2', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
-          </div>
-
-          <div class="weight-group">
-            <div class="weight-group-title">ROLE EXPOSURE</div>
-            <div class="weight-row">
-              <div class="weight-label">SDE / DS / MLE / OR</div>
-              <div class="weight-val" id="wt_tech">10</div>
-              <input type="range" min="0" max="20" value="10" oninput="updateWeight('tech', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
           </div>
 
           <div class="weight-group">
@@ -930,8 +906,10 @@
           </div>
 
           <div class="weight-group">
-            <div class="weight-group-title">ENGAGEMENT LABEL OVERRIDE</div>
-            <div class="weight-row">
+            <div class="weight-group-title">HOW MUCH ENGAGEMENT MOVES THE RISK SCORE</div>
+            
+              <div style="font-size:10px;color:var(--text3);margin:8px 0 12px;line-height:1.6;">Each candidate's form fills, Gmeet attendance, LinkedIn activity and call notes add up to an engagement score. That score becomes Critical / Risky / Safe. These sliders control how much that label shifts the final risk %.</div>
+              <div class="weight-row">
               <div class="weight-label">Critical engagement</div>
               <div class="weight-val" id="wt_eng_critical">30</div>
               <input type="range" min="10" max="50" value="30" oninput="updateWeight('eng_critical', this.value)">
@@ -1072,13 +1050,13 @@ let CANDIDATES_RAW = [];  // populated from backend on load
 // WEIGHTS (mutable)
 // =====================================================================
 let WEIGHTS = {
-  tier1: 18, tier2: 10, other: 5,
-  tech: 10,
+  tier1: 0, tier2: 0, other: 0,    // removed — all tier-1, not a differentiator
+  tech: 0,                          // removed — all campus hires, same roles
   cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
   intern6m: 10, intern_tier1: 12,
   eng_critical: 30, eng_risky: 14, eng_safe: -15,
-  threshold: 68,        // ~10 high risk
-  medium_threshold: 58  // raised so medium band = 58-67, giving ~30 candidates
+  threshold: 68,
+  medium_threshold: 58
 };
 
 // Engagement signal weights (now adjustable)
@@ -1147,12 +1125,7 @@ function updateEngWeight(key, val) {
 function calcRisk(c, weights) {
   weights = weights || WEIGHTS;
   let pts = 0;
-  if (c.tier === 1) pts += weights.tier1;
-  else if (c.tier === 2) pts += weights.tier2;
-  else pts += weights.other;
-  
-  if (['SDE-I','DS-I','MLE-I','OR-I'].includes(c.role)) pts += weights.tech;
-  
+  // College tier & role removed — not differentiators in this cohort
   if (c.cgpa >= 8.5) pts += weights.cgpa_high;
   else if (c.cgpa >= 7.0) pts += weights.cgpa_mid;
   else pts += weights.cgpa_low;
@@ -1810,7 +1783,7 @@ async function saveWeightsToBackend() {
 function resetWeights() {
   // Reset to calibrated defaults
   const defaults = {
-    tier1: 18, tier2: 10, other: 5, tech: 10,
+    tier1: 0, tier2: 0, other: 0, tech: 0,
     cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
     intern6m: 10, intern_tier1: 12,
     eng_critical: 30, eng_risky: 14, eng_safe: -15,
