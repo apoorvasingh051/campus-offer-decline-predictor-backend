@@ -967,7 +967,57 @@
 
       </div>
 
-      <!-- ENGAGEMENT SCORING — full width below -->      </div>
+      <!-- ENGAGEMENT SCORING — full width below -->
+      <div class="panel section">
+        <div class="panel-header">
+          <span class="panel-title">ENGAGEMENT SCORING</span>
+          <span class="panel-meta">ADJUSTABLE · UPDATES LIVE</span>
+        </div>
+
+        <div class="grid-2" style="gap:0;">
+          <!-- LEFT: Forms + Gmeet -->
+          <div>
+            <div class="weight-group">
+              <div class="weight-group-title">FORM COMPLETION</div>
+              <div class="weight-row"><div class="weight-label">Joining form filled<div class="weight-rec">↑ REC: +4 · strongest intent signal</div></div><div class="weight-val" id="ew_jf_yes">+4</div><input type="range" min="1" max="8" value="4" oninput="updateEngWeight('jf_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Joining form not filled<div class="weight-rec">↑ REC: -3 · all confirmed declines missed this</div></div><div class="weight-val" id="ew_jf_no">-3</div><input type="range" min="-8" max="0" value="-3" oninput="updateEngWeight('jf_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">SWAG form filled<div class="weight-rec">↑ REC: +1 · weak but positive signal</div></div><div class="weight-val" id="ew_sw_yes">+1</div><input type="range" min="0" max="4" value="1" oninput="updateEngWeight('sw_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">SWAG form not filled<div class="weight-rec">↑ REC: -1</div></div><div class="weight-val" id="ew_sw_no">-1</div><input type="range" min="-4" max="0" value="-1" oninput="updateEngWeight('sw_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            </div>
+
+            <div class="weight-group" style="border-bottom:none;">
+              <div class="weight-group-title">GMEET ATTENDANCE</div>
+              <div class="weight-row"><div class="weight-label">Kickoff attended<div class="weight-rec">↑ REC: +2</div></div><div class="weight-val" id="ew_gk_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('gk_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Kickoff missed<div class="weight-rec">↑ REC: -1 · all 3 declines missed kickoff</div></div><div class="weight-val" id="ew_gk_no">-1</div><input type="range" min="-4" max="0" step="0.5" value="-1" oninput="updateEngWeight('gk_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">AMA attended<div class="weight-rec">↑ REC: +2</div></div><div class="weight-val" id="ew_ga_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('ga_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">AMA missed<div class="weight-rec">↑ REC: -0.5</div></div><div class="weight-val" id="ew_ga_no">-0.5</div><input type="range" min="-4" max="0" step="0.5" value="-0.5" oninput="updateEngWeight('ga_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            </div>
+          </div>
+
+          <!-- RIGHT: LinkedIn + Call Notes -->
+          <div style="border-left:1px solid var(--border);">
+            <div class="weight-group">
+              <div class="weight-group-title">LINKEDIN (POSITIVE SIGNALS ONLY)</div>
+              <div class="weight-row"><div class="weight-label">Profile mentions Meesho<div class="weight-rec">↑ REC: +3 · strong public commitment signal</div></div><div class="weight-val" id="ew_li_mention">+3</div><input type="range" min="0" max="6" value="3" oninput="updateEngWeight('li_mention', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Liked + Commented<div class="weight-rec">↑ REC: +2</div></div><div class="weight-val" id="ew_li_lc">+2</div><input type="range" min="0" max="5" value="2" oninput="updateEngWeight('li_lc', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Commented only<div class="weight-rec">↑ REC: +1.5</div></div><div class="weight-val" id="ew_li_c">+1.5</div><input type="range" min="0" max="4" step="0.5" value="1.5" oninput="updateEngWeight('li_c', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Liked / Voted<div class="weight-rec">↑ REC: +1</div></div><div class="weight-val" id="ew_li_l">+1</div><input type="range" min="0" max="3" step="0.5" value="1" oninput="updateEngWeight('li_l', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+            </div>
+
+            <div class="weight-group" style="border-bottom:none;">
+              <div class="weight-group-title">CALL NOTES OVERRIDE</div>
+              <div class="weight-row"><div class="weight-label">Dream company / No red flags<div class="weight-rec">↑ REC: +5</div></div><div class="weight-val" id="ew_call_pos_strong">+5</div><input type="range" min="0" max="10" value="5" oninput="updateEngWeight('call_pos_strong', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Excited / Keen<div class="weight-rec">↑ REC: +3</div></div><div class="weight-val" id="ew_call_pos_mild">+3</div><input type="range" min="0" max="6" value="3" oninput="updateEngWeight('call_pos_mild', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
+              <div class="weight-row"><div class="weight-label">Not reachable / No answer<div class="weight-rec">↑ REC: -6 · strongest negative signal</div></div><div class="weight-val" id="ew_call_ghost">-6</div><input type="range" min="-12" max="0" value="-6" oninput="updateEngWeight('call_ghost', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">MBA / Masters / PhD<div class="weight-rec">↑ REC: -4</div></div><div class="weight-val" id="ew_call_mba">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_mba', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">PPO / Competing offer<div class="weight-rec">↑ REC: -4 · very reliable decline signal</div></div><div class="weight-val" id="ew_call_ppo">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_ppo', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+              <div class="weight-row"><div class="weight-label">Risky / Red flag keywords<div class="weight-rec">↑ REC: -2</div></div><div class="weight-val" id="ew_call_risky">-2</div><input type="range" min="-6" max="0" value="-2" oninput="updateEngWeight('call_risky', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      </div>
     </div>
 
     <!-- AI ANALYZER TAB -->
