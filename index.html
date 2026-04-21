@@ -864,25 +864,26 @@
         </div>
       </div>
 
+      <!-- Single clean weights panel -->
       <div class="grid-2 section">
+
+        <!-- LEFT: Profile & Internship -->
         <div class="panel">
           <div class="panel-header">
             <span class="panel-title">PROFILE & INTERNSHIP WEIGHTS</span>
-            <span class="panel-meta">ADJUST & WATCH RANKINGS UPDATE LIVE</span>
-          </div>
-
+            <span class="panel-meta">UPDATES LIVE</span>
           </div>
 
           <div class="weight-group">
             <div class="weight-group-title">CGPA BANDS</div>
             <div class="weight-row">
-              <div class="weight-label">High (> 8.5)</div>
+              <div class="weight-label">High (&gt; 8.5)<div class="weight-rec">↑ REC: 14 · high CGPA = more outside options</div></div>
               <div class="weight-val" id="wt_cgpa_high">14</div>
               <input type="range" min="0" max="25" value="14" oninput="updateWeight('cgpa_high', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Mid (7.0 – 8.5)</div>
+              <div class="weight-label">Mid (7.0 – 8.5)<div class="weight-rec">↑ REC: 7</div></div>
               <div class="weight-val" id="wt_cgpa_mid">7</div>
               <input type="range" min="0" max="15" value="7" oninput="updateWeight('cgpa_mid', this.value)">
               <div class="weight-val-right">pts</div>
@@ -892,39 +893,15 @@
           <div class="weight-group">
             <div class="weight-group-title">INTERNSHIP RISK</div>
             <div class="weight-row">
-              <div class="weight-label">6-Month Internship (PPO risk)</div>
+              <div class="weight-label">6-Month Internship (PPO risk)<div class="weight-rec">↑ REC: 10 · 2/3 confirmed declines had this</div></div>
               <div class="weight-val" id="wt_intern6m">10</div>
               <input type="range" min="0" max="20" value="10" oninput="updateWeight('intern6m', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Tier-1 Company Intern</div>
+              <div class="weight-label">Tier-1 Company Intern<div class="weight-rec">↑ REC: 12 · all 3 confirmed declines had this</div></div>
               <div class="weight-val" id="wt_intern_tier1">12</div>
               <input type="range" min="0" max="20" value="12" oninput="updateWeight('intern_tier1', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
-          </div>
-
-          <div class="weight-group">
-            <div class="weight-group-title">HOW MUCH ENGAGEMENT MOVES THE RISK SCORE</div>
-            
-              <div style="font-size:10px;color:var(--text3);margin:8px 0 12px;line-height:1.6;">Each candidate's form fills, Gmeet attendance, LinkedIn activity and call notes add up to an engagement score. That score becomes Critical / Risky / Safe. These sliders control how much that label shifts the final risk %.</div>
-              <div class="weight-row">
-              <div class="weight-label">Critical engagement</div>
-              <div class="weight-val" id="wt_eng_critical">30</div>
-              <input type="range" min="10" max="50" value="30" oninput="updateWeight('eng_critical', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
-            <div class="weight-row">
-              <div class="weight-label">Risky engagement</div>
-              <div class="weight-val" id="wt_eng_risky">14</div>
-              <input type="range" min="0" max="30" value="14" oninput="updateWeight('eng_risky', this.value)">
-              <div class="weight-val-right">pts</div>
-            </div>
-            <div class="weight-row">
-              <div class="weight-label">Safe engagement</div>
-              <div class="weight-val" id="wt_eng_safe">-15</div>
-              <input type="range" min="-30" max="0" value="-15" oninput="updateWeight('eng_safe', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
           </div>
@@ -932,61 +909,65 @@
           <div class="weight-group" style="border-bottom:none;">
             <div class="weight-group-title">HIGH RISK THRESHOLD</div>
             <div class="weight-row">
-              <div class="weight-label">Min % to flag as HIGH</div>
+              <div class="weight-label">Min % to flag as HIGH<div class="weight-rec">↑ REC: 68% · captures all 3 confirmed declines</div></div>
               <div class="weight-val" id="wt_threshold">68</div>
               <input type="range" min="50" max="85" value="68" oninput="updateWeight('threshold', this.value)">
+              <div class="weight-val-right">%</div>
+            </div>
+            <div class="weight-row">
+              <div class="weight-label">Min % for MEDIUM band<div class="weight-rec">↑ REC: 58% · gives ~30 medium risk candidates</div></div>
+              <div class="weight-val" id="wt_medium_threshold">58</div>
+              <input type="range" min="40" max="67" value="58" oninput="updateWeight('medium_threshold', this.value)">
               <div class="weight-val-right">%</div>
             </div>
           </div>
         </div>
 
-        <div>
-          <div class="panel section">
-            <div class="panel-header">
-              <span class="panel-title">ENGAGEMENT SCORING</span>
-              <span class="panel-meta">ADJUSTABLE · UPDATES LIVE</span>
+        <!-- RIGHT: Engagement Impact -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">HOW MUCH ENGAGEMENT MOVES THE RISK SCORE</span>
+            <span class="panel-meta">UPDATES LIVE</span>
+          </div>
+          <div class="weight-group">
+            <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
+              Form fills, Gmeet attendance, LinkedIn activity and call notes produce an engagement score.
+              That score is labelled <strong>Critical / Risky / Safe</strong>.
+              These sliders control how much that label shifts the final risk %.
             </div>
-            <div class="weight-group">
-              <div class="weight-group-title">FORM COMPLETION</div>
-              <div class="weight-row"><div class="weight-label">Joining form filled<div class="weight-rec">↑ REC: +4 · strongest intent signal</div></div><div class="weight-val" id="ew_jf_yes">+4</div><input type="range" min="1" max="8" value="4" oninput="updateEngWeight('jf_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Joining form not filled<div class="weight-rec">↑ REC: -3 · all confirmed declines missed this</div></div><div class="weight-val" id="ew_jf_no">-3</div><input type="range" min="-8" max="0" value="-3" oninput="updateEngWeight('jf_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">SWAG form filled<div class="weight-rec">↑ REC: +1 · weak but positive signal</div></div><div class="weight-val" id="ew_sw_yes">+1</div><input type="range" min="0" max="4" value="1" oninput="updateEngWeight('sw_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">SWAG form not filled<div class="weight-rec">↑ REC: -1</div></div><div class="weight-val" id="ew_sw_no">-1</div><input type="range" min="-4" max="0" value="-1" oninput="updateEngWeight('sw_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            <div class="weight-row">
+              <div class="weight-label">Candidate is Critical<div class="weight-rec">↑ REC: 30 · disengaged — push risk up strongly</div></div>
+              <div class="weight-val" id="wt_eng_critical">30</div>
+              <input type="range" min="10" max="50" value="30" oninput="updateWeight('eng_critical', this.value)">
+              <div class="weight-val-right">pts</div>
             </div>
-            <div class="weight-group">
-              <div class="weight-group-title">GMEET ATTENDANCE</div>
-              <div class="weight-row"><div class="weight-label">Kickoff attended<div class="weight-rec">↑ REC: +2</div></div><div class="weight-val" id="ew_gk_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('gk_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Kickoff missed<div class="weight-rec">↑ REC: -1 · all 3 declines missed kickoff</div></div><div class="weight-val" id="ew_gk_no">-1</div><input type="range" min="-4" max="0" step="0.5" value="-1" oninput="updateEngWeight('gk_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">AMA attended<div class="weight-rec">↑ REC: +1.5 · self-selecting, slightly lower weight</div></div><div class="weight-val" id="ew_ga_yes">+2</div><input type="range" min="0" max="6" value="2" oninput="updateEngWeight('ga_yes', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">AMA missed<div class="weight-rec">↑ REC: -0.5</div></div><div class="weight-val" id="ew_ga_no">-0.5</div><input type="range" min="-4" max="0" step="0.5" value="-0.5" oninput="updateEngWeight('ga_no', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            <div class="weight-row">
+              <div class="weight-label">Candidate is Risky<div class="weight-rec">↑ REC: 14 · some red flags but not critical</div></div>
+              <div class="weight-val" id="wt_eng_risky">14</div>
+              <input type="range" min="0" max="30" value="14" oninput="updateWeight('eng_risky', this.value)">
+              <div class="weight-val-right">pts</div>
             </div>
-            <div class="weight-group">
-              <div class="weight-group-title">LINKEDIN (POSITIVE SIGNALS)</div>
-              <div class="weight-row"><div class="weight-label">Profile mentions Meesho<div class="weight-rec">↑ REC: +3 · strong public commitment signal</div></div><div class="weight-val" id="ew_li_mention">+3</div><input type="range" min="0" max="6" value="3" oninput="updateEngWeight('li_mention', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Liked + Commented</div><div class="weight-val" id="ew_li_lc">+2</div><input type="range" min="0" max="5" value="2" oninput="updateEngWeight('li_lc', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Commented only</div><div class="weight-val" id="ew_li_c">+1.5</div><input type="range" min="0" max="4" step="0.5" value="1.5" oninput="updateEngWeight('li_c', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Liked / Voted</div><div class="weight-val" id="ew_li_l">+1</div><input type="range" min="0" max="3" step="0.5" value="1" oninput="updateEngWeight('li_l', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-            </div>
-            <div class="weight-group" style="border-bottom:none;">
-              <div class="weight-group-title">CALL NOTES OVERRIDE</div>
-              <div class="weight-row"><div class="weight-label">Dream company / No red flags</div><div class="weight-val" id="ew_call_pos_strong">+5</div><input type="range" min="0" max="10" value="5" oninput="updateEngWeight('call_pos_strong', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Excited / Keen</div><div class="weight-val" id="ew_call_pos_mild">+3</div><input type="range" min="0" max="6" value="3" oninput="updateEngWeight('call_pos_mild', this.value)"><div class="weight-val-right" style="color:var(--green)">pos</div></div>
-              <div class="weight-row"><div class="weight-label">Not reachable / No answer<div class="weight-rec">↑ REC: -6 · single strongest negative signal</div></div><div class="weight-val" id="ew_call_ghost">-6</div><input type="range" min="-12" max="0" value="-6" oninput="updateEngWeight('call_ghost', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">MBA / Masters / PhD</div><div class="weight-val" id="ew_call_mba">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_mba', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">PPO / Competing offer<div class="weight-rec">↑ REC: -4 · bump up, very reliable decline signal</div></div><div class="weight-val" id="ew_call_ppo">-4</div><input type="range" min="-10" max="0" value="-4" oninput="updateEngWeight('call_ppo', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
-              <div class="weight-row"><div class="weight-label">Risky / Red flag keywords</div><div class="weight-val" id="ew_call_risky">-2</div><input type="range" min="-6" max="0" value="-2" oninput="updateEngWeight('call_risky', this.value)"><div class="weight-val-right" style="color:var(--accent)">neg</div></div>
+            <div class="weight-row" style="margin-bottom:0;">
+              <div class="weight-label">Candidate is Safe<div class="weight-rec">↑ REC: -15 · pulls risk % down for engaged candidates</div></div>
+              <div class="weight-val" id="wt_eng_safe">-15</div>
+              <input type="range" min="-30" max="0" value="-15" oninput="updateWeight('eng_safe', this.value)">
+              <div class="weight-val-right">pts</div>
             </div>
           </div>
 
-          <div class="panel section">
+          <!-- Live rankings panel -->
+          <div style="border-top:1px solid var(--border);margin-top:0;">
             <div class="panel-header">
               <span class="panel-title">LIVE RECALCULATION</span>
               <span class="panel-meta">TOP 20 BY SCORE</span>
             </div>
-            <div id="liveRankings" style="max-height:300px;overflow-y:auto;"></div>
+            <div id="liveRankings" style="max-height:280px;overflow-y:auto;"></div>
           </div>
         </div>
+
       </div>
+
+      <!-- ENGAGEMENT SCORING — full width below -->      </div>
     </div>
 
     <!-- AI ANALYZER TAB -->
