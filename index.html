@@ -652,20 +652,7 @@
   .tab-content { display: none; }
   .tab-content.active { display: block; }
 
-  /* OUTCOME BUTTONS */
-  .outcome-btn {
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 9px;
-    cursor: pointer;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text3);
-    transition: all 0.1s;
-  }
 
-  .outcome-btn.joined { border-color: var(--green); color: var(--green); background: rgba(34,197,94,0.1); }
-  .outcome-btn.declined { border-color: var(--purple); color: var(--purple); background: rgba(168,85,247,0.1); }
 
   /* NOTIFICATION TOAST */
   .toast {
@@ -767,7 +754,7 @@
       <!-- HIGH RISK TOP 10 -->
       <div class="panel section">
         <div class="panel-header">
-          <span class="panel-title" style="color:var(--accent)">🔴 TOP 10 HIGH RISK · confirmed declines shown as ✓ validation</span>
+          <span class="panel-title" style="color:var(--accent)">🔴 TOP 10 HIGH RISK</span>
           <div class="legend">
             <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div>MAY</div>
             <div class="legend-item"><div class="legend-dot" style="background:var(--amber)"></div>JUN</div>
@@ -812,14 +799,14 @@
       <div class="grid-3 section">
         <div class="panel">
           <div class="panel-header">
-            <span class="panel-title" style="color:var(--accent)">🔴 CALL THIS WEEK</span>
+            <span class="panel-title" style="color:var(--accent)">🔴 CALL THIS WEEK · TOP 10</span>
             <span class="panel-meta" id="criticalCount">HIGH RISK · UNCALLED</span>
           </div>
           <div id="criticalQueue"></div>
         </div>
         <div class="panel">
           <div class="panel-header">
-            <span class="panel-title" style="color:var(--amber)">🟡 MONITOR CLOSELY</span>
+            <span class="panel-title" style="color:var(--amber)">🟡 MONITOR CLOSELY · TOP 30</span>
             <span class="panel-meta" id="riskyCount">MEDIUM RISK</span>
           </div>
           <div id="riskyQueue"></div>
@@ -857,7 +844,7 @@
             <div class="th">RISK %</div>
             <div class="th">SCORE</div>
             <div class="th">DOJ</div>
-            <div class="th">OUTCOME</div>
+            <div class="th">STATUS</div>
           </div>
           <div id="searchResults"></div>
         </div>
@@ -1262,11 +1249,7 @@ function candidateRow(c, rank, showOutcome) {
     <div>${dojBadge(c.doj)}</div>
     <div>
       ${isDeclined ? '<span class="confirmed-badge">DECLINED ✓</span>' : 
-        isJoined ? '<span style="font-size:9px;color:var(--green)">JOINED ✓</span>' :
-        showOutcome ? `<div style="display:flex;gap:4px;">
-          <button class="outcome-btn joined" onclick="event.stopPropagation();markOutcome('${c.name}','joined')">✓ JND</button>
-          <button class="outcome-btn declined" onclick="event.stopPropagation();markOutcome('${c.name}','declined')">✗ DEC</button>
-        </div>` : ''}
+        isJoined ? '<span style="font-size:9px;color:var(--green)">JOINED ✓</span>' : ''}
     </div>
   </div>`;
 }
@@ -1354,12 +1337,13 @@ function renderDashboard() {
 // =====================================================================
 function renderAction() {
   const all = scoredCandidates();
-  const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold && !OUTCOMES[c.name]);
-  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]);
-  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45) && !OUTCOMES[c.name]);
+  const highAll = all.filter(c => c.risk_pct >= WEIGHTS.threshold && !OUTCOMES[c.name]);
+  const high = highAll.slice(0, 10); // show top 10 only
+  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||58) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]).slice(0, 30);
+  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||58) && !OUTCOMES[c.name]);
 
-  document.getElementById('criticalCount').textContent = `${high.length} CANDIDATES`;
-  document.getElementById('riskyCount').textContent = `${medium.length} CANDIDATES`;
+  document.getElementById('criticalCount').textContent = `TOP 10 OF ${highAll.length} HIGH RISK`;
+  document.getElementById('riskyCount').textContent = `TOP 30 OF ${all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||58) && c.risk_pct < WEIGHTS.threshold).length} MEDIUM RISK`;
   document.getElementById('safeCount').textContent = `${safe.length} CANDIDATES`;
 
   function queueCard(c) {
@@ -1448,12 +1432,7 @@ function renderLiveRankings() {
 // =====================================================================
 // OUTCOME MARKING
 // =====================================================================
-function markOutcome(name, outcome) {
-  OUTCOMES[name] = outcome;
-  showToast(`${name} marked as ${outcome.toUpperCase()}`);
-  pushOutcomeToBackend(name, outcome);  // sync to backend if connected
-  renderAll();
-}
+// Outcomes managed via Google Sheet — no local marking needed
 
 // =====================================================================
 // CANDIDATE DETAIL OVERLAY
@@ -1495,10 +1474,7 @@ function openDetail(name) {
       ${c.call_note ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;">RECRUITER NOTES</div><div style="font-size:12px;color:var(--text2);">"${c.call_note}"</div></div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary" onclick="getAISingle('${c.name}')">GET AI RECOMMENDATION</button>
-        ${!OUTCOMES[c.name] ? `
-          <button class="btn btn-ghost" onclick="markOutcome('${c.name}','joined');closeDetail()">MARK AS JOINED</button>
-          <button class="btn" style="background:rgba(168,85,247,0.15);color:var(--purple);border:1px solid rgba(168,85,247,0.3);" onclick="markOutcome('${c.name}','declined');closeDetail()">MARK AS DECLINED</button>
-        ` : `<span style="font-size:12px;color:var(--text3);padding:8px 0;">Outcome recorded: <strong style="color:${OUTCOMES[c.name]==='declined'?'var(--purple)':'var(--green)'}">${OUTCOMES[c.name].toUpperCase()}</strong></span>`}
+        ${OUTCOMES[c.name] ? `<span style="font-size:12px;color:var(--text3);padding:8px 0;">Outcome: <strong style="color:${OUTCOMES[c.name]==='declined'?'var(--purple)':'var(--green)'}">${OUTCOMES[c.name].toUpperCase()}</strong> (update in Google Sheet)</span>` : '<span style="font-size:11px;color:var(--text3);padding:8px 0;">Update outcome in Google Sheet → hit Refresh</span>'}
       </div>
       <div id="detailAI"></div>
     </div>
@@ -1871,19 +1847,7 @@ function resetWeights() {
   showToast('↺ Reset to calibrated defaults');
 }
 
-async function pushOutcomeToBackend(name, outcome) {
-  const url = getBackendUrl();
-  if (!url || !LIVE_MODE) return;
-  try {
-    await fetch(`${url}/outcome`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, outcome })
-    });
-  } catch(e) {
-    console.warn('Could not push outcome to backend:', e.message);
-  }
-}
+
 
 // =====================================================================
 // RENDER ALL
