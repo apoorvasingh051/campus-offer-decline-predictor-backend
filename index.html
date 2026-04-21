@@ -877,15 +877,15 @@
           <div class="weight-group">
             <div class="weight-group-title">CGPA BANDS</div>
             <div class="weight-row">
-              <div class="weight-label">High (&gt; 8.5)<div class="weight-rec">↑ REC: 14 · high CGPA = more outside options</div></div>
-              <div class="weight-val" id="wt_cgpa_high">14</div>
-              <input type="range" min="0" max="25" value="14" oninput="updateWeight('cgpa_high', this.value)">
+              <div class="weight-label">High (&gt; 8.5)<div class="weight-rec">↑ REC: 15 · high achievers have more outside options</div></div>
+              <div class="weight-val" id="wt_cgpa_high">15</div>
+              <input type="range" min="0" max="25" value="15" oninput="updateWeight('cgpa_high', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Mid (7.0 – 8.5)<div class="weight-rec">↑ REC: 7</div></div>
-              <div class="weight-val" id="wt_cgpa_mid">7</div>
-              <input type="range" min="0" max="15" value="7" oninput="updateWeight('cgpa_mid', this.value)">
+              <div class="weight-label">Mid (7.0 – 8.5)<div class="weight-rec">↑ REC: 8</div></div>
+              <div class="weight-val" id="wt_cgpa_mid">8</div>
+              <input type="range" min="0" max="15" value="8" oninput="updateWeight('cgpa_mid', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
           </div>
@@ -893,15 +893,15 @@
           <div class="weight-group">
             <div class="weight-group-title">INTERNSHIP RISK</div>
             <div class="weight-row">
-              <div class="weight-label">6-Month Internship (PPO risk)<div class="weight-rec">↑ REC: 10 · 2/3 confirmed declines had this</div></div>
-              <div class="weight-val" id="wt_intern6m">10</div>
-              <input type="range" min="0" max="20" value="10" oninput="updateWeight('intern6m', this.value)">
+              <div class="weight-label">6-Month Internship (PPO risk)<div class="weight-rec">↑ REC: 12 · 2/3 confirmed declines had this</div></div>
+              <div class="weight-val" id="wt_intern6m">12</div>
+              <input type="range" min="0" max="20" value="12" oninput="updateWeight('intern6m', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Tier-1 Company Intern<div class="weight-rec">↑ REC: 12 · all 3 confirmed declines had this</div></div>
-              <div class="weight-val" id="wt_intern_tier1">12</div>
-              <input type="range" min="0" max="20" value="12" oninput="updateWeight('intern_tier1', this.value)">
+              <div class="weight-label">Tier-1 Company Intern<div class="weight-rec">↑ REC: 15 · all 3 confirmed declines had this</div></div>
+              <div class="weight-val" id="wt_intern_tier1">15</div>
+              <input type="range" min="0" max="25" value="15" oninput="updateWeight('intern_tier1', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
           </div>
@@ -909,13 +909,13 @@
           <div class="weight-group" style="border-bottom:none;">
             <div class="weight-group-title">HIGH RISK THRESHOLD</div>
             <div class="weight-row">
-              <div class="weight-label">Min % to flag as HIGH<div class="weight-rec">↑ REC: 68% · captures all 3 confirmed declines</div></div>
-              <div class="weight-val" id="wt_threshold">68</div>
-              <input type="range" min="50" max="85" value="68" oninput="updateWeight('threshold', this.value)">
+              <div class="weight-label">Min % to flag as HIGH<div class="weight-rec">↑ REC: 65% · all 3 confirmed declines score ≥65%</div></div>
+              <div class="weight-val" id="wt_threshold">65</div>
+              <input type="range" min="30" max="85" value="65" oninput="updateWeight('threshold', this.value)">
               <div class="weight-val-right">%</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Min % for MEDIUM band<div class="weight-rec">↑ REC: 58% · gives ~30 medium risk candidates</div></div>
+              <div class="weight-label">Min % for MEDIUM band<div class="weight-rec">↑ REC: 40% · 40-64 band gives ~30 medium risk</div></div>
               <div class="weight-val" id="wt_medium_threshold">58</div>
               <input type="range" min="40" max="67" value="58" oninput="updateWeight('medium_threshold', this.value)">
               <div class="weight-val-right">%</div>
@@ -936,21 +936,21 @@
               These sliders control how much that label shifts the final risk %.
             </div>
             <div class="weight-row">
-              <div class="weight-label">Candidate is Critical<div class="weight-rec">↑ REC: 30 · disengaged — push risk up strongly</div></div>
-              <div class="weight-val" id="wt_eng_critical">30</div>
-              <input type="range" min="10" max="50" value="30" oninput="updateWeight('eng_critical', this.value)">
+              <div class="weight-label">Candidate is Critical<div class="weight-rec">↑ REC: 45 · dominant signal — disengaged candidates must score high</div></div>
+              <div class="weight-val" id="wt_eng_critical">45</div>
+              <input type="range" min="10" max="60" value="45" oninput="updateWeight('eng_critical', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Candidate is Risky<div class="weight-rec">↑ REC: 14 · some red flags but not critical</div></div>
-              <div class="weight-val" id="wt_eng_risky">14</div>
-              <input type="range" min="0" max="30" value="14" oninput="updateWeight('eng_risky', this.value)">
+              <div class="weight-label">Candidate is Risky<div class="weight-rec">↑ REC: 25 · some red flags but not critical</div></div>
+              <div class="weight-val" id="wt_eng_risky">25</div>
+              <input type="range" min="0" max="40" value="25" oninput="updateWeight('eng_risky', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
             <div class="weight-row" style="margin-bottom:0;">
-              <div class="weight-label">Candidate is Safe<div class="weight-rec">↑ REC: -15 · pulls risk % down for engaged candidates</div></div>
-              <div class="weight-val" id="wt_eng_safe">-15</div>
-              <input type="range" min="-30" max="0" value="-15" oninput="updateWeight('eng_safe', this.value)">
+              <div class="weight-label">Candidate is Safe<div class="weight-rec">↑ REC: -10 · pulls risk down for safe candidates</div></div>
+              <div class="weight-val" id="wt_eng_safe">-10</div>
+              <input type="range" min="-30" max="0" value="-10" oninput="updateWeight('eng_safe', this.value)">
               <div class="weight-val-right">pts</div>
             </div>
           </div>
@@ -1081,13 +1081,13 @@ let CANDIDATES_RAW = [];  // populated from backend on load
 // WEIGHTS (mutable)
 // =====================================================================
 let WEIGHTS = {
-  tier1: 0, tier2: 0, other: 0,    // removed — all tier-1, not a differentiator
-  tech: 0,                          // removed — all campus hires, same roles
-  cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
-  intern6m: 10, intern_tier1: 12,
-  eng_critical: 30, eng_risky: 14, eng_safe: -15,
-  threshold: 68,
-  medium_threshold: 58
+  tier1: 0, tier2: 0, other: 0,
+  tech: 0,
+  cgpa_high: 15, cgpa_mid: 8, cgpa_low: 3,
+  intern6m: 12, intern_tier1: 15,
+  eng_critical: 45, eng_risky: 25, eng_safe: -10,
+  threshold: 65,
+  medium_threshold: 40
 };
 
 // Engagement signal weights (now adjustable)
@@ -1815,10 +1815,10 @@ function resetWeights() {
   // Reset to calibrated defaults
   const defaults = {
     tier1: 0, tier2: 0, other: 0, tech: 0,
-    cgpa_high: 14, cgpa_mid: 7, cgpa_low: 3,
-    intern6m: 10, intern_tier1: 12,
-    eng_critical: 30, eng_risky: 14, eng_safe: -15,
-    threshold: 68, medium_threshold: 58
+    cgpa_high: 15, cgpa_mid: 8, cgpa_low: 3,
+    intern6m: 12, intern_tier1: 15,
+    eng_critical: 45, eng_risky: 25, eng_safe: -10,
+    threshold: 65, medium_threshold: 40
   };
   const engDefaults = {
     jf_yes: 4, jf_no: -3, sw_yes: 1, sw_no: -1,
