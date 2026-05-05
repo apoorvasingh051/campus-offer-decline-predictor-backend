@@ -23,32 +23,9 @@ app = FastAPI(title="Meesho Campus Predictor API")
 BASE_DIR = Path(__file__).resolve().parent
 
 
-def csv_env(name: str, fallback: list[str]) -> list[str]:
-    raw = os.getenv(name, "")
-    values = [v.strip() for v in raw.split(",") if v.strip()]
-    return values or fallback
-
-
-# CORS is intentionally narrow by default. Set ALLOWED_ORIGINS in production
-# to the exact frontend origins that should be allowed to call this API.
-ALLOWED_ORIGINS = csv_env(
-    "ALLOWED_ORIGINS",
-    [
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8000",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:5173",
-        "http://127.0.0.1:8000",
-        "https://apoorvasingh051.github.io",
-        "https://campus-offer-decline-predictor-backend.onrender.com",
-        "null",  # local file:// testing
-    ],
-)
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=["*"],
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -585,6 +562,6 @@ def get_outcomes():
 def health():
     return {
         "status": "healthy",
-        "allowed_origins": ALLOWED_ORIGINS,
+        "allowed_origins": ["*"],
         "sheet_configured": bool(SHEET_ID),
     }

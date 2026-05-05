@@ -1882,13 +1882,7 @@ function populateAISelect() {
 // AUTO-FETCH ON LOAD
 // =====================================================================
 const DEPLOYED_BACKEND_URL = 'https://campus-offer-decline-predictor-backend.onrender.com';
-const BACKEND_URL = (
-  window.location.hostname.includes('onrender.com') ||
-  window.location.hostname === 'localhost' ||
-  window.location.hostname === '127.0.0.1'
-)
-  ? window.location.origin
-  : DEPLOYED_BACKEND_URL;
+const BACKEND_URL = DEPLOYED_BACKEND_URL;
 let _retryCount = 0;
 let _retryTimer = null;
 

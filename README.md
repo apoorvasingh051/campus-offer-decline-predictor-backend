@@ -18,11 +18,8 @@ A FastAPI backend that:
 
 | Variable | Purpose |
 |----------|---------|
-| `ALLOWED_ORIGINS` | Comma-separated frontend origins allowed by CORS, e.g. `https://apoorvasingh051.github.io,https://campus-offer-decline-predictor-backend.onrender.com` |
 | `SHEET_ID` | Google Sheet ID. Defaults to the current tracker ID. |
 | `SHEET_NAME` | Sheet tab name. Defaults to `Main Tracker`. |
-
-If you open `index.html` directly from disk during local testing, the browser origin is `null`; include `null` in `ALLOWED_ORIGINS` only for that local/internal workflow.
 
 ## Deploy to Render (step by step)
 
@@ -38,10 +35,9 @@ If you open `index.html` directly from disk during local testing, the browser or
 2. Click **New +** → **Web Service**
 3. Click **Connect** next to your `meesho-predictor-backend` repo
 4. Render auto-detects everything from `render.yaml`
-5. Set `ALLOWED_ORIGINS` to the exact URL where the dashboard will be opened
-6. Click **Create Web Service**
-7. Wait ~2 minutes for it to build
-8. Your API is live at: `https://meesho-predictor-backend.onrender.com`
+5. Click **Create Web Service**
+6. Wait ~2 minutes for it to build
+7. Your API is live at: `https://meesho-predictor-backend.onrender.com`
 
 ### Step 3 — Test it
 Open in browser:
