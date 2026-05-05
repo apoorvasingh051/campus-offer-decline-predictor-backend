@@ -717,7 +717,6 @@
       <div class="api-section">
         <span style="font-size:10px;color:var(--text3);white-space:nowrap;">DATA SOURCE</span>
         <span style="font-size:11px;color:var(--text2);flex:1;" id="backendSource">campus-offer-decline-predictor-backend.onrender.com</span>
-        <input type="password" class="api-input" id="backendKey" placeholder="backend access key" autocomplete="off" oninput="syncBackendKey(this.value)" style="flex:0 1 220px;">
         <span class="api-status api-empty" id="backendStatus">CONNECTING...</span>
         <button class="btn btn-ghost" onclick="refreshFromBackend()" id="refreshBtn">↻ REFRESH</button>
       </div>
@@ -731,7 +730,7 @@
       <div id="emptyState" style="display:none;text-align:center;padding:60px 20px;color:var(--text3);">
         <div style="font-size:32px;margin-bottom:12px;">📡</div>
         <div style="font-family:var(--font-display);font-size:16px;color:var(--text2);margin-bottom:8px;">No backend connected</div>
-        <div style="font-size:12px;">Enter the backend access key above and click ↻ REFRESH to load live data from your Google Sheet</div>
+        <div style="font-size:12px;">Click ↻ REFRESH to load live data from your Google Sheet</div>
       </div>
       <div class="kpi-strip section" id="kpiStrip"></div>
 
@@ -1769,24 +1768,6 @@ let LIVE_MODE = false;  // true when backend URL is set and responding
 
 // getBackendUrl defined above
 
-function getBackendKey() {
-  const input = document.getElementById('backendKey');
-  return (input && input.value.trim()) || localStorage.getItem('meesho_backend_key') || '';
-}
-
-function syncBackendKey(val) {
-  localStorage.setItem('meesho_backend_key', val.trim());
-  clearTimeout(window._backendKeyTimer);
-  window._backendKeyTimer = setTimeout(() => {
-    if (val.trim()) refreshFromBackend();
-  }, 400);
-}
-
-function authHeaders(extra) {
-  const key = getBackendKey();
-  return key ? { ...(extra || {}), 'X-Predictor-Key': key } : { ...(extra || {}) };
-}
-
 function validateBackend() {
   // Backend URL is now hardcoded - nothing to validate
 }
@@ -1798,7 +1779,7 @@ async function pushWeightsToBackend(weights) {
   try {
     await fetch(`${url}/weights`, {
       method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(weights)
     });
   } catch(e) {
@@ -1828,7 +1809,7 @@ async function saveWeightsToBackend() {
   try {
     const resp = await fetch(`${url}/weights/save`, {
       method: 'POST',
-      headers: authHeaders({ 'Content-Type': 'application/json' }),
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(allWeights)
     });
 
@@ -1912,15 +1893,6 @@ function getBackendUrl() { return BACKEND_URL; }
 async function autoFetchFromBackend() {
   const status = document.getElementById('backendStatus');
   const btn = document.getElementById('refreshBtn');
-  if (!getBackendKey()) {
-    status.className = 'api-status api-bad';
-    status.textContent = 'KEY REQUIRED';
-    if (btn) { btn.textContent = '↻ REFRESH'; btn.disabled = false; }
-    renderDashboard();
-    populateAISelect();
-    renderLiveRankings();
-    return false;
-  }
 
   // Show waking up message with countdown
   const isFirstTry = _retryCount === 0;
@@ -1931,7 +1903,7 @@ async function autoFetchFromBackend() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
-    const resp = await fetch(`${BACKEND_URL}/score`, { signal: controller.signal, headers: authHeaders() });
+    const resp = await fetch(`${BACKEND_URL}/score`, { signal: controller.signal });
     clearTimeout(timeout);
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -2030,11 +2002,6 @@ if (savedKey) {
   document.getElementById('apiKey').value = savedKey;
 }
 
-const savedBackendKey = localStorage.getItem('meesho_backend_key');
-if (savedBackendKey) {
-  const backendKeyEl = document.getElementById('backendKey');
-  if (backendKeyEl) backendKeyEl.value = savedBackendKey;
-}
 const backendSourceEl = document.getElementById('backendSource');
 if (backendSourceEl) backendSourceEl.textContent = BACKEND_URL.replace(/^https?:\/\//, '');
 
