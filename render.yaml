@@ -5,3 +5,12 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
+    envVars:
+      - key: PREDICTOR_API_KEY
+        sync: false
+      - key: ALLOWED_ORIGINS
+        value: https://campus-offer-decline-predictor-backend.onrender.com
+      - key: SHEET_ID
+        value: 1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI
+      - key: SHEET_NAME
+        value: Main Tracker
