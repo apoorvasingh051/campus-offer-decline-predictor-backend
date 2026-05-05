@@ -3,7 +3,7 @@ Meesho Campus Decline Predictor — FastAPI Backend
 Reads live data from Google Sheets, scores candidates, exposes REST API.
 """
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -57,8 +57,6 @@ SHEET_ID = os.getenv("SHEET_ID", "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI")
 SHEET_NAME = os.getenv("SHEET_NAME", "Main Tracker")
 WEIGHTS_FILE = Path(os.getenv("WEIGHTS_FILE", BASE_DIR / "weights.json"))
 OUTCOMES_FILE = Path(os.getenv("OUTCOMES_FILE", BASE_DIR / "outcomes.csv"))
-API_KEY = os.getenv("PREDICTOR_API_KEY", "")
-API_KEY_HEADER = "X-Predictor-Key"
 
 # Column name mappings from your Google Sheet headers
 # Edit these if your sheet column names differ
@@ -171,18 +169,6 @@ WEIGHT_LIMITS = {
 ORDERED_THRESHOLDS = ("medium_threshold", "threshold")
 
 # ── WEIGHTS PERSISTENCE ───────────────────────────────────────────────────────
-
-def require_api_key(x_predictor_key: Optional[str] = Header(default=None, alias=API_KEY_HEADER)):
-    """Protect all endpoints that expose or mutate recruiting data."""
-    if not API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="PREDICTOR_API_KEY is not configured on the backend.",
-        )
-    if x_predictor_key != API_KEY:
-        raise HTTPException(status_code=401, detail="Invalid or missing API key.")
-    return True
-
 
 def validate_weight_updates(payload: dict, strict: bool = True, base: Optional[dict] = None) -> dict:
     if not isinstance(payload, dict):
@@ -538,7 +524,7 @@ def dashboard():
     return FileResponse(index_path)
 
 @app.get("/score")
-def get_scores(_: bool = Depends(require_api_key)):
+def get_scores():
     """Pull latest sheet data, score all candidates, return ranked list."""
     weights = load_weights()
     raw = fetch_sheet_data()
@@ -552,12 +538,12 @@ def get_scores(_: bool = Depends(require_api_key)):
     }
 
 @app.get("/weights")
-def get_weights(_: bool = Depends(require_api_key)):
+def get_weights():
     """Return current signal weights."""
     return load_weights()
 
 @app.post("/weights")
-async def update_weights(payload: dict, _: bool = Depends(require_api_key)):
+async def update_weights(payload: dict):
     """Save new weights and return confirmation."""
     current = load_weights()
     updates = validate_weight_updates(payload, strict=True, base=current)
@@ -566,7 +552,7 @@ async def update_weights(payload: dict, _: bool = Depends(require_api_key)):
     return {"status": "saved", "weights": weights}
 
 @app.post("/weights/save")
-async def save_weights_endpoint(payload: dict, _: bool = Depends(require_api_key)):
+async def save_weights_endpoint(payload: dict):
     """Save weights to disk so all users get them on next load."""
     current = load_weights()
     updates = validate_weight_updates(payload, strict=True, base=current)
@@ -579,7 +565,7 @@ class OutcomePayload(BaseModel):
     outcome: str  # "joined" or "declined"
 
 @app.post("/outcome")
-def record_outcome(payload: OutcomePayload, _: bool = Depends(require_api_key)):
+def record_outcome(payload: OutcomePayload):
     """Record a join/decline outcome for future model training."""
     outcome = payload.outcome.strip().lower()
     if outcome not in ["joined", "declined"]:
@@ -588,7 +574,7 @@ def record_outcome(payload: OutcomePayload, _: bool = Depends(require_api_key)):
     return {"status": "recorded", "name": payload.name.strip(), "outcome": outcome}
 
 @app.get("/outcomes")
-def get_outcomes(_: bool = Depends(require_api_key)):
+def get_outcomes():
     """Return locally recorded outcomes used when the sheet has no outcome."""
     outcomes = load_outcomes()
     return {"outcomes": outcomes, "total": len(outcomes)}
@@ -597,7 +583,6 @@ def get_outcomes(_: bool = Depends(require_api_key)):
 def health():
     return {
         "status": "healthy",
-        "auth_configured": bool(API_KEY),
         "allowed_origins": ALLOWED_ORIGINS,
         "sheet_configured": bool(SHEET_ID),
     }
