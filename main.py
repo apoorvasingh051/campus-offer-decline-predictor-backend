@@ -11,6 +11,7 @@ import requests
 import json
 import os
 import csv
+import math
 import re
 import tempfile
 from datetime import datetime
@@ -364,7 +365,8 @@ def engagement_label(score: float, weights: dict) -> str:
     return "safe"
 
 def clamp_score(value: float, low: int = 5, high: int = 100) -> int:
-    return min(max(int(round(value)), low), high)
+    rounded = math.floor(value + 0.5)
+    return min(max(int(rounded), low), high)
 
 def profile_market_points(c: dict, weights: dict) -> float:
     pts = 0.0

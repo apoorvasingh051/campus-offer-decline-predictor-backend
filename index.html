@@ -1723,6 +1723,15 @@ function openDetail(name) {
   const outcome = OUTCOMES[c.name];
   const reasonsHtml = (c.reasons || []).map(r => `<li>${esc(r)}</li>`).join('');
   const components = c.components || {};
+  const scoreParts = [
+    Number(components.market || 0),
+    Number(components.engagement || 0),
+    Number(components.urgency || 0),
+    Number(components.call_notes || 0),
+    Number(components.follow_up || 0),
+  ];
+  const rawScore = scoreParts.reduce((sum, value) => sum + value, 0);
+  const scoreFormula = `${scoreParts.map(value => fmtDelta(value)).join(' + ')} = ${rawScore.toFixed(1)} -> ${c.risk_pct}`;
   const componentHtml = [
     ['Market/Profile', components.market],
     ['Engagement', components.engagement],
@@ -1763,6 +1772,13 @@ function openDetail(name) {
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;">
         <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">WHY THIS CATEGORY</div>
         <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--text2);line-height:1.7;">${reasonsHtml}</ul>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">SCORE CALCULATION</div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text2);line-height:1.7;">
+          Market/Profile + Engagement + DOJ urgency + Call notes + Follow-up<br>
+          ${esc(scoreFormula)}
+        </div>
       </div>
       <div class="signal-grid" style="margin-bottom:16px;">${componentHtml}</div>
       ${c.call_note ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;">RECRUITER NOTES</div><div style="font-size:12px;color:var(--text2);">"${esc(c.call_note)}"</div></div>` : ''}
