@@ -766,7 +766,7 @@
           <div class="th">ENG</div>
           <div class="th">CANDIDATE</div>
           <div class="th">SIGNALS</div>
-          <div class="th">RISK %</div>
+          <div class="th">RISK</div>
           <div class="th">SCORE</div>
           <div class="th">DOJ</div>
           <div class="th">STATUS</div>
@@ -774,7 +774,7 @@
         <div id="top10List"></div>
       </div>
 
-      <!-- MEDIUM RISK TOP 30 -->
+      <!-- WATCH TOP 30 -->
       <div class="panel section">
         <div class="panel-header">
           <span class="panel-title" style="color:var(--amber)">🟡 NEXT 30 — MONITOR WEEKLY</span>
@@ -785,7 +785,7 @@
           <div class="th">ENG</div>
           <div class="th">CANDIDATE</div>
           <div class="th">SIGNALS</div>
-          <div class="th">RISK %</div>
+          <div class="th">RISK</div>
           <div class="th">SCORE</div>
           <div class="th">DOJ</div>
           <div class="th">STATUS</div>
@@ -807,7 +807,7 @@
         <div class="panel">
           <div class="panel-header">
             <span class="panel-title" style="color:var(--amber)">🟡 MONITOR CLOSELY · TOP 30</span>
-            <span class="panel-meta" id="riskyCount">MEDIUM RISK</span>
+            <span class="panel-meta" id="riskyCount">WATCH</span>
           </div>
           <div id="riskyQueue"></div>
         </div>
@@ -828,8 +828,8 @@
         <div class="filter-row" id="filterRow">
           <button class="filter-btn active" onclick="setFilter('all', this)">ALL</button>
           <button class="filter-btn" onclick="setFilter('high', this)">HIGH RISK</button>
-          <button class="filter-btn" onclick="setFilter('medium', this)">MEDIUM</button>
-          <button class="filter-btn" onclick="setFilter('low', this)">OK</button>
+          <button class="filter-btn" onclick="setFilter('medium', this)">WATCH</button>
+          <button class="filter-btn" onclick="setFilter('low', this)">LOW</button>
           <button class="filter-btn" onclick="setFilter('may', this)">MAY DOJ</button>
           <button class="filter-btn" onclick="setFilter('jun', this)">JUN DOJ</button>
           <button class="filter-btn" onclick="setFilter('jul', this)">JUL DOJ</button>
@@ -841,7 +841,7 @@
             <div class="th">ENG</div>
             <div class="th">CANDIDATE</div>
             <div class="th">SIGNALS</div>
-            <div class="th">RISK %</div>
+            <div class="th">RISK</div>
             <div class="th">SCORE</div>
             <div class="th">DOJ</div>
             <div class="th">STATUS</div>
@@ -909,16 +909,16 @@
           <div class="weight-group" style="border-bottom:none;">
             <div class="weight-group-title">HIGH RISK THRESHOLD</div>
             <div class="weight-row">
-              <div class="weight-label">Min % to flag as HIGH<div class="weight-rec">↑ REC: 65% · all 3 confirmed declines score ≥65%</div></div>
-              <div class="weight-val" id="wt_threshold">65</div>
-              <input type="range" min="30" max="85" value="65" oninput="updateWeight('threshold', this.value)">
-              <div class="weight-val-right">%</div>
+              <div class="weight-label">Min score to flag as HIGH<div class="weight-rec">↑ REC: 70 · keeps High as a true intervention queue</div></div>
+              <div class="weight-val" id="wt_threshold">70</div>
+              <input type="range" min="45" max="90" value="70" oninput="updateWeight('threshold', this.value)">
+              <div class="weight-val-right">score</div>
             </div>
             <div class="weight-row">
-              <div class="weight-label">Min % for MEDIUM band<div class="weight-rec">↑ REC: 40% · 40-64 band gives ~30 medium risk</div></div>
-              <div class="weight-val" id="wt_medium_threshold">40</div>
-              <input type="range" min="30" max="67" value="40" oninput="updateWeight('medium_threshold', this.value)">
-              <div class="weight-val-right">%</div>
+              <div class="weight-label">Min score for WATCH band<div class="weight-rec">↑ REC: 45 · keeps weak single-signal cases out of Watch</div></div>
+              <div class="weight-val" id="wt_medium_threshold">45</div>
+              <input type="range" min="30" max="67" value="45" oninput="updateWeight('medium_threshold', this.value)">
+              <div class="weight-val-right">score</div>
             </div>
           </div>
         </div>
@@ -933,7 +933,7 @@
             <div style="font-size:11px;color:var(--text2);line-height:1.7;margin-bottom:12px;">
               Form fills, Gmeet attendance, LinkedIn activity and call notes produce an engagement score.
               That score is labelled <strong>Critical / Risky / Safe</strong>.
-              These sliders control how much that label shifts the final risk %.
+              These sliders control how much that label shifts the final risk score.
             </div>
             <div class="weight-row">
               <div class="weight-label">Candidate is Critical<div class="weight-rec">↑ REC: 45 · dominant signal — disengaged candidates must score high</div></div>
@@ -1086,8 +1086,8 @@ let WEIGHTS = {
   cgpa_high: 15, cgpa_mid: 8, cgpa_low: 3,
   intern6m: 12, intern_tier1: 15,
   eng_critical: 45, eng_risky: 25, eng_safe: -10,
-  threshold: 65,
-  medium_threshold: 40
+  threshold: 70,
+  medium_threshold: 45
 };
 
 // Engagement signal weights (now adjustable)
@@ -1248,8 +1248,11 @@ function updateEngWeight(key, val) {
   }, 350);
 }
 
-function calcRisk(c, weights) {
-  weights = weights || WEIGHTS;
+function clampScore(value, low = 5, high = 100) {
+  return Math.min(Math.max(Math.round(value), low), high);
+}
+
+function marketPoints(c, weights) {
   let pts = 0;
   if (c.tier === 1) pts += weights.tier1 || 0;
   else if (c.tier === 2) pts += weights.tier2 || 0;
@@ -1262,30 +1265,151 @@ function calcRisk(c, weights) {
   if (c.cgpa >= 8.5) pts += weights.cgpa_high;
   else if (c.cgpa >= 7.0) pts += weights.cgpa_mid;
   else pts += weights.cgpa_low;
-  
+
   if (c.intern_months === 6) pts += weights.intern6m;
   if (c.intern_tier === 1) pts += weights.intern_tier1;
-  
+  return Math.round(pts * 10) / 10;
+}
+
+function engagementRiskPoints(eng, weights) {
+  const criticalThreshold = weights.eng_critical_threshold ?? ENG_WEIGHTS.eng_critical_threshold;
+  const riskyThreshold = weights.eng_risky_threshold ?? ENG_WEIGHTS.eng_risky_threshold;
+  const criticalCap = weights.eng_critical;
+  const riskyAnchor = weights.eng_risky;
+
+  if (eng < criticalThreshold) {
+    return Math.round(Math.min(criticalCap, riskyAnchor + (criticalThreshold - eng) * 4) * 10) / 10;
+  }
+
+  if (eng < riskyThreshold) {
+    const span = Math.max(riskyThreshold - criticalThreshold, 1);
+    const ratio = (riskyThreshold - eng) / span;
+    const lowerAnchor = Math.max(8, riskyAnchor * 0.45);
+    return Math.round((lowerAnchor + ratio * (riskyAnchor - lowerAnchor)) * 10) / 10;
+  }
+
+  const safeDiscount = Math.abs(Math.min(weights.eng_safe || 0, 0));
+  if (!safeDiscount) return 0;
+  const ratio = Math.min(Math.max((eng - riskyThreshold) / 8, 0), 1);
+  return Math.round(-safeDiscount * ratio * 10) / 10;
+}
+
+function urgencyPoints(doj) {
+  if (doj === 'May') return 8;
+  if (doj === 'Jun') return 4;
+  return 0;
+}
+
+function callNoteRiskPoints(callRisk) {
+  if (callRisk <= -6) return 18;
+  if (callRisk <= -4) return 14;
+  if (callRisk <= -3) return 12;
+  if (callRisk <= -2) return 8;
+  if (callRisk >= 5) return -10;
+  if (callRisk >= 3) return -6;
+  return 0;
+}
+
+function followUpPoints(c) {
+  if (c.called) return 0;
+  if (c.doj === 'May') return 8;
+  if (c.doj === 'Jun') return 4;
+  if (c.intern_months === 6 || c.intern_tier === 1) return 4;
+  return 0;
+}
+
+function categoryForCandidate(c, score, components, label, weights) {
+  if (c.outcome === 'declined') return ['confirmed_decline', 'Confirmed decline'];
+  if (c.call_risk <= -6) return ['high', 'High risk'];
+  const highThreshold = weights.threshold || 70;
+  const watchThreshold = weights.medium_threshold || 45;
+  const criticalHighThreshold = Math.max(watchThreshold, highThreshold - 5);
+  const supportingWatchThreshold = Math.max(1, watchThreshold - 10);
+
+  if (score >= highThreshold) return ['high', 'High risk'];
+  if (label === 'critical' && score >= criticalHighThreshold) {
+    return ['high', 'High risk'];
+  }
+  if (score >= watchThreshold) {
+    return ['watch', 'Watch'];
+  }
+  if (label === 'critical') {
+    return ['watch', 'Watch'];
+  }
+  if (score >= supportingWatchThreshold && (
+    !c.joining_form ||
+    !c.gmeet_k ||
+    c.intern_months === 6 ||
+    c.intern_tier === 1 ||
+    c.doj === 'May' ||
+    c.call_risk < 0
+  )) {
+    return ['watch', 'Watch'];
+  }
+  if (!c.called && c.doj === 'May' && (c.cgpa >= 8.5 || c.tier === 1)) {
+    return ['watch', 'Watch'];
+  }
+  return ['low', 'Low'];
+}
+
+function riskReasons(c, eng, label) {
+  const reasons = [];
+  if (c.outcome === 'declined') reasons.push('Confirmed declined outcome in sheet or outcomes file.');
+  if (label === 'critical') reasons.push(`Engagement score ${eng > 0 ? '+' : ''}${eng.toFixed(1)} is critical.`);
+  else if (label === 'risky') reasons.push(`Engagement score ${eng > 0 ? '+' : ''}${eng.toFixed(1)} needs watching.`);
+  if (!c.joining_form) reasons.push('Joining dates form is not filled.');
+  if (!c.gmeet_k) reasons.push('Kickoff meeting was missed.');
+  if (c.intern_months === 6) reasons.push('6-month internship can increase PPO or alternate-offer risk.');
+  if (c.intern_tier === 1) reasons.push('Tier-1 internship company suggests stronger outside-option risk.');
+  if (c.doj === 'May') reasons.push('May DOJ needs faster recruiter action.');
+  else if (c.doj === 'Jun') reasons.push('June DOJ is approaching soon.');
+  if (!c.called && ['May', 'Jun'].includes(c.doj)) reasons.push('No recruiter call is recorded for a near-term DOJ.');
+  if (c.call_risk <= -6) reasons.push('Call notes indicate the candidate has been hard to reach.');
+  else if (c.call_risk <= -4) reasons.push('Call notes mention higher studies or similar decline risk.');
+  else if (c.call_risk <= -3) reasons.push('Call notes mention PPO, competing offer, or placement elsewhere.');
+  else if (c.call_risk <= -2) reasons.push('Call notes contain a recruiter concern.');
+  else if (c.call_risk >= 3) reasons.push('Positive call notes reduce the score.');
+  if (c.cgpa >= 8.5) reasons.push('High CGPA may correlate with stronger outside options.');
+  return reasons.length ? reasons : ['No major decline signal beyond the baseline profile.'];
+}
+
+function calcRisk(c, weights) {
+  weights = weights || WEIGHTS;
   const eng = engagementScore(c);
   const label = engLabel(eng);
-  if (label === 'critical') pts += weights.eng_critical;
-  else if (label === 'risky') pts += weights.eng_risky;
-  else pts += weights.eng_safe;
-  
+  const components = {
+    market: marketPoints(c, weights),
+    engagement: engagementRiskPoints(eng, weights),
+    urgency: urgencyPoints(c.doj),
+    call_notes: callNoteRiskPoints(c.call_risk),
+    follow_up: followUpPoints(c)
+  };
+  const score = clampScore(components.market + components.engagement + components.urgency + components.call_notes + components.follow_up);
+  components.total = score;
+  const [category, categoryLabel] = categoryForCandidate(c, score, components, label, weights);
+
   return {
-    risk_pct: Math.min(Math.max(Math.round(pts), 5), 100),
+    risk_pct: score,
+    risk_score: score,
     eng_score: eng,
-    eng_label: label
+    eng_label: label,
+    category,
+    category_label: categoryLabel,
+    components,
+    reasons: riskReasons(c, eng, label)
   };
 }
 
 function scoredCandidates(weights) {
   return CANDIDATES_RAW.map(c => {
-    const s = calcRisk(c, weights);
-    return {
+    const candidate = {
       ...c,
-      ...s,
-      outcome: OUTCOMES[c.name] || null
+      outcome: OUTCOMES[c.name] || c.outcome || null
+    };
+    const s = calcRisk(candidate, weights);
+    return {
+      ...candidate,
+      ...s
     };
   }).sort((a, b) => b.risk_pct - a.risk_pct);
 }
@@ -1293,18 +1417,58 @@ function scoredCandidates(weights) {
 // =====================================================================
 // RENDER HELPERS
 // =====================================================================
+function riskGroup(c) {
+  if (!c) return 'low';
+  if (c.category === 'confirmed_decline') return 'confirmed_decline';
+  if (c.category === 'high') return 'high';
+  if (c.category === 'watch') return 'watch';
+  if (c.category === 'low') return 'low';
+  if (c.risk_pct >= WEIGHTS.threshold) return 'high';
+  if (c.risk_pct >= (WEIGHTS.medium_threshold || 45)) return 'watch';
+  return 'low';
+}
+
+function isHighRisk(c) {
+  return ['high', 'confirmed_decline'].includes(riskGroup(c));
+}
+
+function isWatchRisk(c) {
+  return riskGroup(c) === 'watch';
+}
+
+function isLowRisk(c) {
+  return riskGroup(c) === 'low';
+}
+
 function riskColor(pct, threshold) {
+  if (typeof pct === 'object') {
+    const group = riskGroup(pct);
+    if (group === 'high' || group === 'confirmed_decline') return 'var(--accent)';
+    if (group === 'watch') return 'var(--amber)';
+    return 'var(--green)';
+  }
   threshold = threshold || WEIGHTS.threshold;
-  const medium = WEIGHTS.medium_threshold || 40;
+  const medium = WEIGHTS.medium_threshold || 45;
   if (pct >= threshold) return 'var(--accent)';
   if (pct >= medium) return 'var(--amber)';
   return 'var(--green)';
 }
 
 function riskClass(label) {
+  if (label === 'confirmed_decline' || label === 'high') return 'risk-critical';
+  if (label === 'watch') return 'risk-risky';
+  if (label === 'low') return 'risk-safe';
   if (label === 'critical') return 'risk-critical';
   if (label === 'risky') return 'risk-risky';
   return 'risk-safe';
+}
+
+function riskPillText(c) {
+  const group = riskGroup(c);
+  if (group === 'confirmed_decline') return 'D';
+  if (group === 'high') return 'H';
+  if (group === 'watch') return 'W';
+  return 'L';
 }
 
 function signalDots(c) {
@@ -1334,29 +1498,30 @@ function dojBadge(doj) {
 }
 
 function candidateRow(c, rank, showOutcome) {
-  const color = riskColor(c.risk_pct);
-  const engCls = riskClass(c.eng_label);
+  const color = riskColor(c);
+  const group = riskGroup(c);
+  const engCls = riskClass(group);
   const isDeclined = OUTCOMES[c.name] === 'declined';
   const isJoined = OUTCOMES[c.name] === 'joined';
   const token = esc(candidateToken(c.name));
   
   return `<div class="candidate-card ${isDeclined ? 'declined' : ''}" data-candidate="${token}" onclick="openDetailByToken(this.dataset.candidate)">
     <div class="rank">${rank}</div>
-    <div class="risk-pill ${engCls}">${c.eng_label[0].toUpperCase()}</div>
+    <div class="risk-pill ${engCls}" title="${esc(c.category_label || c.eng_label)}">${riskPillText(c)}</div>
     <div>
       <div class="candidate-name">${esc(c.name)}</div>
       <div class="candidate-sub">${esc(c.college)} · ${esc(c.role)}</div>
     </div>
-    <div>${signalDots(c)}</div>
+      <div>${signalDots(c)}</div>
     <div class="risk-bar-wrap">
       <div class="risk-bar"><div class="risk-bar-fill" style="width:${c.risk_pct}%;background:${color}"></div></div>
-      <div class="risk-pct" style="color:${color}">${c.risk_pct}%</div>
+      <div class="risk-pct" style="color:${color}">${c.risk_pct}</div>
     </div>
     <div class="eng-score" style="color:${c.eng_score < 0 ? 'var(--accent)' : c.eng_score < 6 ? 'var(--amber)' : 'var(--green)'}">${c.eng_score > 0 ? '+' : ''}${c.eng_score.toFixed(1)}</div>
     <div>${dojBadge(c.doj)}</div>
     <div>
       ${isDeclined ? '<span class="confirmed-badge">DECLINED ✓</span>' : 
-        isJoined ? '<span style="font-size:9px;color:var(--green)">JOINED ✓</span>' : ''}
+        isJoined ? '<span style="font-size:9px;color:var(--green)">JOINED ✓</span>' : `<span style="font-size:9px;color:${color};font-weight:600;">${esc((c.category_label || '').toUpperCase())}</span>`}
     </div>
   </div>`;
 }
@@ -1392,20 +1557,20 @@ function renderDashboard() {
   const all = scoredCandidates();
   const active = all; // include declined — they validate model accuracy
   // All counts for KPI display
-  const highAll = active.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  const mediumAll = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold);
-  const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40));
+  const highAll = active.filter(isHighRisk);
+  const mediumAll = active.filter(isWatchRisk);
+  const low = active.filter(isLowRisk);
   // Display slices
-  const top10 = active.slice(0, 10);
+  const top10 = highAll.slice(0, 10);
   const medium = mediumAll.slice(0, 30);
   const declines = Object.values(OUTCOMES).filter(v => v === 'declined').length;
   const joins = Object.values(OUTCOMES).filter(v => v === 'joined').length;
 
   document.getElementById('kpiStrip').innerHTML = `
     <div class="kpi"><div class="kpi-label">Total Offers</div><div class="kpi-value kpi-blue">${all.length}</div><div class="kpi-sub">2026 cohort</div></div>
-    <div class="kpi"><div class="kpi-label">🔴 High Risk</div><div class="kpi-value kpi-red">${highAll.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% · showing top 10</div></div>
-    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${mediumAll.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold||40}–${WEIGHTS.threshold-1}% · showing top 30</div></div>
-    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold||40}% · safe</div></div>
+    <div class="kpi"><div class="kpi-label">High Priority</div><div class="kpi-value kpi-red">${highAll.length}</div><div class="kpi-sub">rules + ≥${WEIGHTS.threshold} score · top 10</div></div>
+    <div class="kpi"><div class="kpi-label">Watch</div><div class="kpi-value kpi-amber">${mediumAll.length}</div><div class="kpi-sub">needs weekly check-in · top 30</div></div>
+    <div class="kpi"><div class="kpi-label">Low</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">no urgent signal</div></div>
     <div class="kpi"><div class="kpi-label">Confirmed Declines</div><div class="kpi-value kpi-confirmed">${declines}</div><div class="kpi-sub">from sheet outcomes</div></div>
     <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${highAll.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk · ≤6 weeks</div></div>
   `;
@@ -1435,8 +1600,8 @@ function renderDashboard() {
   const medCount = document.getElementById('mediumCount');
   if (medEl) medEl.innerHTML = medium.length 
     ? medium.map((c, i) => candidateRow(c, i+1, false)).join('') 
-    : '<div style="padding:24px;text-align:center;color:var(--green);font-size:12px;">✓ No medium risk candidates</div>';
-  if (medCount) medCount.textContent = `SHOWING ${medium.length} OF ${mediumAll.length} MEDIUM RISK`;
+    : '<div style="padding:24px;text-align:center;color:var(--green);font-size:12px;">✓ No watch candidates</div>';
+  if (medCount) medCount.textContent = `SHOWING ${medium.length} OF ${mediumAll.length} WATCH`;
 }
 
 // =====================================================================
@@ -1444,23 +1609,26 @@ function renderDashboard() {
 // =====================================================================
 function renderAction() {
   const all = scoredCandidates();
-  const highAll = all.filter(c => c.risk_pct >= WEIGHTS.threshold && !OUTCOMES[c.name]);
+  const highAll = all.filter(c => isHighRisk(c) && !OUTCOMES[c.name]);
   const high = highAll.slice(0, 10); // show top 10 only
-  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]).slice(0, 30);
-  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40) && !OUTCOMES[c.name]);
+  const watchAll = all.filter(c => isWatchRisk(c) && !OUTCOMES[c.name]);
+  const medium = watchAll.slice(0, 30);
+  const safe = all.filter(c => isLowRisk(c) && !OUTCOMES[c.name]);
 
   document.getElementById('criticalCount').textContent = `TOP 10 OF ${highAll.length} HIGH RISK`;
-  document.getElementById('riskyCount').textContent = `TOP 30 OF ${all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold).length} MEDIUM RISK`;
+  document.getElementById('riskyCount').textContent = `TOP 30 OF ${watchAll.length} WATCH`;
   document.getElementById('safeCount').textContent = `${safe.length} CANDIDATES`;
 
   function queueCard(c) {
     const token = esc(candidateToken(c.name));
+    const reasons = (c.reasons || []).slice(0, 2).map(esc).join(' · ');
     return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" data-candidate="${token}" onclick="openDetailByToken(this.dataset.candidate)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
         <span style="font-family:var(--font-display);font-size:12px;font-weight:700;">${esc(c.name)}</span>
-        <span style="color:${riskColor(c.risk_pct)};font-size:12px;font-weight:500;">${c.risk_pct}%</span>
+        <span style="color:${riskColor(c)};font-size:12px;font-weight:500;">${c.risk_pct}</span>
       </div>
       <div style="font-size:10px;color:var(--text3);">${esc(c.college)} · ${esc(c.role)} · ${esc(c.doj)} DOJ</div>
+      <div style="font-size:10px;color:var(--text2);line-height:1.45;margin-top:4px;">${reasons}</div>
       <div style="margin-top:6px;">${signalDots(c)}</div>
     </div>`;
   }
@@ -1488,9 +1656,9 @@ function renderSearch() {
     all = all.filter(c => c.name.toLowerCase().includes(query) || c.college.toLowerCase().includes(query) || c.role.toLowerCase().includes(query));
   }
   
-  if (currentFilter === 'high') all = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  else if (currentFilter === 'medium') all = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold);
-  else if (currentFilter === 'low') all = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40));
+  if (currentFilter === 'high') all = all.filter(isHighRisk);
+  else if (currentFilter === 'medium') all = all.filter(isWatchRisk);
+  else if (currentFilter === 'low') all = all.filter(isLowRisk);
   else if (currentFilter === 'may') all = all.filter(c => c.doj === 'May');
   else if (currentFilter === 'jun') all = all.filter(c => c.doj === 'Jun');
   else if (currentFilter === 'jul') all = all.filter(c => c.doj === 'Jul');
@@ -1521,18 +1689,19 @@ function updateWeight(key, val) {
 
 function renderLiveRankings() {
   const all = scoredCandidates();
-  const high = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
   
   document.getElementById('liveRankings').innerHTML = all.slice(0, 20).map((c, i) => {
-    const color = riskColor(c.risk_pct);
+    const color = riskColor(c);
     const isDeclined = OUTCOMES[c.name] === 'declined';
+    const reason = (c.reasons || [])[0] || c.category_label || '';
     return `<div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div>
         <span style="font-size:10px;color:var(--text3);margin-right:8px;">${i+1}</span>
         <span style="font-family:var(--font-display);font-size:12px;font-weight:600;">${esc(c.name)}</span>
         ${isDeclined ? '<span style="margin-left:6px;font-size:9px;color:var(--purple)">↑CONFIRMED</span>' : ''}
+        <div style="font-size:9px;color:var(--text3);margin-left:22px;margin-top:2px;">${esc(reason)}</div>
       </div>
-      <span style="color:${color};font-size:13px;font-weight:700;">${c.risk_pct}%</span>
+      <span style="color:${color};font-size:13px;font-weight:700;">${c.risk_pct}</span>
     </div>`;
   }).join('');
 }
@@ -1549,21 +1718,31 @@ function openDetail(name) {
   const c = scoredCandidates().find(x => x.name === name);
   if (!c) return;
   
-  const color = riskColor(c.risk_pct);
+  const color = riskColor(c);
   const token = esc(candidateToken(c.name));
   const outcome = OUTCOMES[c.name];
+  const reasonsHtml = (c.reasons || []).map(r => `<li>${esc(r)}</li>`).join('');
+  const components = c.components || {};
+  const componentHtml = [
+    ['Market/Profile', components.market],
+    ['Engagement', components.engagement],
+    ['DOJ urgency', components.urgency],
+    ['Call notes', components.call_notes],
+    ['Follow-up', components.follow_up],
+  ].map(([label, value]) => `<div class="signal-item"><span class="signal-item-label">${label}</span><span class="signal-item-val">${Number(value || 0) > 0 ? '+' : ''}${esc(value ?? 0)}</span></div>`).join('');
   
   document.getElementById('detailPanel').innerHTML = `
     <div class="detail-header">
       <div>
         <div class="detail-name">${esc(c.name)}</div>
         <div class="detail-sub">${esc(c.college)} · ${esc(c.role)} · CGPA ${esc(c.cgpa)} · ${esc(c.doj)} DOJ</div>
+        <div style="margin-top:6px;"><span class="risk-pill ${riskClass(riskGroup(c))}" style="display:inline-flex;width:auto;height:auto;border-radius:4px;padding:4px 8px;">${esc(c.category_label || 'Low')}</span></div>
         ${outcome === 'declined' ? '<div style="margin-top:6px;"><span class="confirmed-badge">CONFIRMED DECLINE ✓</span></div>' : ''}
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="text-align:center;">
-          <div style="font-family:var(--font-display);font-size:32px;font-weight:800;color:${color};">${c.risk_pct}%</div>
-          <div style="font-size:10px;color:var(--text3);">DECLINE RISK</div>
+          <div style="font-family:var(--font-display);font-size:32px;font-weight:800;color:${color};">${c.risk_pct}</div>
+          <div style="font-size:10px;color:var(--text3);">RISK SCORE</div>
         </div>
         <button class="close-btn" onclick="closeDetail()">×</button>
       </div>
@@ -1581,6 +1760,11 @@ function openDetail(name) {
         <div class="signal-item"><span class="signal-item-label">Call Notes</span><span class="signal-item-val ${c.call_risk < 0 ? 'sig-neg' : c.call_risk > 0 ? 'sig-pos' : 'sig-neu'}">${c.called ? (c.call_risk < 0 ? `⚠ Negative (${c.call_risk})` : c.call_risk > 0 ? `✓ Positive (+${c.call_risk})` : 'Neutral') : '— Not called yet'}</span></div>
         <div class="signal-item"><span class="signal-item-label">Engagement Score</span><span class="signal-item-val ${c.eng_score < 4 ? 'sig-neg' : c.eng_score < 10 ? '' : 'sig-pos'}" style="${c.eng_score >= 4 && c.eng_score < 10 ? 'color:var(--amber)' : ''}">${c.eng_score > 0 ? '+' : ''}${c.eng_score.toFixed(1)} (${c.eng_label.toUpperCase()})</span></div>
       </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:8px;">WHY THIS CATEGORY</div>
+        <ul style="margin:0;padding-left:16px;font-size:12px;color:var(--text2);line-height:1.7;">${reasonsHtml}</ul>
+      </div>
+      <div class="signal-grid" style="margin-bottom:16px;">${componentHtml}</div>
       ${c.call_note ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;">RECRUITER NOTES</div><div style="font-size:12px;color:var(--text2);">"${esc(c.call_note)}"</div></div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
         <button class="btn btn-primary" data-candidate="${token}" onclick="getAISingleByToken(this.dataset.candidate)">GET AI RECOMMENDATION</button>
@@ -1659,7 +1843,8 @@ Candidate profile:
 - College: ${c.college} (Tier ${c.tier})
 - Role: ${c.role} | CGPA: ${c.cgpa}
 - Joining Date: ${c.doj} 2026
-- Decline Risk Score: ${c.risk_pct}%
+- Risk Category: ${c.category_label || 'Low'}
+- Decline Risk Score: ${c.risk_pct}/100
 
 Engagement signals:
 - Joining Dates Form: ${c.joining_form ? 'Filled ✓' : 'NOT filled ✗'}
@@ -1672,6 +1857,8 @@ Engagement signals:
 - Recruiter call: ${c.called ? `Yes — notes score: ${c.call_risk} (${c.call_note || 'no notes'})` : 'Not yet called'}
 
 Engagement score: ${c.eng_score > 0 ? '+' : ''}${c.eng_score.toFixed(1)} (${c.eng_label.toUpperCase()})
+Main model reasons:
+${(c.reasons || []).slice(0, 5).map(r => `- ${r}`).join('\n')}
 
 In 3-4 sentences max: 
 1. What is the most likely reason this candidate might decline?
@@ -1719,7 +1906,7 @@ async function getAIRecommendation() {
 }
 
 async function runBatchAnalysis() {
-  const high = scoredCandidates().filter(c => c.risk_pct >= WEIGHTS.threshold);
+  const high = scoredCandidates().filter(isHighRisk);
   const btn = document.getElementById('batchBtn');
   const results = document.getElementById('batchResults');
   
@@ -1730,12 +1917,12 @@ async function runBatchAnalysis() {
   for (const c of high) {
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;';
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}%</span></div><div class="thinking" style="font-size:11px;color:var(--text3);">Analyzing...</div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c)}">${c.risk_pct} · ${esc(c.category_label || '')}</span></div><div class="thinking" style="font-size:11px;color:var(--text3);">Analyzing...</div>`;
     results.appendChild(card);
     
     try {
       const text = await callClaude(buildPrompt(c));
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}% · ${esc(c.college)} · ${esc(c.doj)}</span></div>`;
+      card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c)}">${c.risk_pct} · ${esc(c.college)} · ${esc(c.doj)}</span></div>`;
       const textEl = document.createElement('div');
       textEl.style.cssText = 'font-size:11px;color:var(--text2);line-height:1.7;white-space:pre-wrap;';
       textEl.textContent = text;
@@ -1838,7 +2025,7 @@ function resetWeights() {
     cgpa_high: 15, cgpa_mid: 8, cgpa_low: 3,
     intern6m: 12, intern_tier1: 15,
     eng_critical: 45, eng_risky: 25, eng_safe: -10,
-    threshold: 65, medium_threshold: 40
+    threshold: 70, medium_threshold: 45
   };
   const engDefaults = {
     jf_yes: 4, jf_no: -3, sw_yes: 1, sw_no: -1,
@@ -1874,8 +2061,8 @@ function renderAll() {
 
 function populateAISelect() {
   const sel = document.getElementById('aiCandidateSelect');
-  const high = scoredCandidates().filter(c => c.risk_pct >= WEIGHTS.threshold);
-  sel.replaceChildren(...high.map(c => new Option(`${c.name} — ${c.risk_pct}% — ${c.college}`, c.name)));
+  const high = scoredCandidates().filter(isHighRisk);
+  sel.replaceChildren(...high.map(c => new Option(`${c.name} — ${c.risk_pct} — ${c.college}`, c.name)));
 }
 
 // =====================================================================
@@ -1908,6 +2095,7 @@ async function autoFetchFromBackend() {
     const data = await resp.json();
 
     if (data.candidates && data.candidates.length > 0) {
+      OUTCOMES = {};
       data.candidates.forEach(c => {
         if (c.outcome) OUTCOMES[c.name] = c.outcome;
       });
@@ -1933,6 +2121,13 @@ async function autoFetchFromBackend() {
         call_risk: c.call_risk || 0,
         doj: c.doj || 'Jul',
         call_note: c.call_note || '',
+        outcome: c.outcome || null,
+        risk_pct: c.risk_pct,
+        risk_score: c.risk_score || c.risk_pct,
+        category: c.category,
+        category_label: c.category_label,
+        components: c.components || {},
+        reasons: c.reasons || [],
       }));
 
       applyWeightsFromBackend(data.weights);

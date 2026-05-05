@@ -3,8 +3,9 @@
 ## What this is
 A FastAPI backend that:
 1. Reads your live Google Sheet (no API key needed)
-2. Scores all 245 candidates using the signal weights
-3. Exposes a REST API that the HTML frontend calls
+2. Scores candidates using explainable components and calibrated signal weights
+3. Groups candidates into High, Watch, Low, and Confirmed Decline queues
+4. Exposes a REST API that the HTML frontend calls
 
 ## Files
 - `main.py` — all backend logic
@@ -65,6 +66,27 @@ The app will pull live data from your sheet.
 | POST | `/outcome` | Record a local fallback join/decline result |
 | GET | `/outcomes` | Return local fallback outcomes |
 | GET | `/health` | Health check |
+
+## Scoring model
+
+The score is a 0-100 recruiter triage score, not a literal probability. Each
+candidate receives component scores for:
+- `market` — college tier, role, CGPA, internship duration, and internship company
+- `engagement` — joining form, SWAG form, GMeet attendance, LinkedIn activity, and call sentiment
+- `urgency` — May and June DOJ timing
+- `call_notes` — risk or reassurance from recruiter call remarks
+- `follow_up` — near-term DOJ candidates without a recorded recruiter call
+
+The API also returns `category`, `category_label`, `components`, and `reasons`
+for each candidate so the dashboard can explain why someone is in High or Watch.
+
+The default buckets are intentionally conservative:
+- `High` is the immediate intervention queue. It requires a score of 70+, a
+  critical-engagement score of 65+, or a hard negative call signal.
+- `Watch` captures candidates with meaningful supporting evidence, including
+  medium scores, critical engagement below the High cutoff, and near-term May
+  DOJ candidates without a recorded recruiter call.
+- `Low` means no current action signal beyond normal cohort follow-up.
 
 ## Column name mapping
 If your sheet column headers are named differently, edit `COL_MAP` in `main.py`.

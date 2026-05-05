@@ -83,8 +83,8 @@ DEFAULT_WEIGHTS = {
     "eng_critical": 45,
     "eng_risky": 25,
     "eng_safe": -10,
-    "threshold": 65,
-    "medium_threshold": 40,
+    "threshold": 70,
+    "medium_threshold": 45,
     "eng_jf_yes": 4,
     "eng_jf_no": -3,
     "eng_sw_yes": 1,
@@ -363,32 +363,183 @@ def engagement_label(score: float, weights: dict) -> str:
     if score < weights["eng_risky_threshold"]: return "risky"
     return "safe"
 
-def calc_risk(c: dict, weights: dict) -> dict:
-    pts = 0
-    if c["tier"] == 1: pts += weights["tier1"]
-    elif c["tier"] == 2: pts += weights["tier2"]
-    else: pts += weights["other"]
+def clamp_score(value: float, low: int = 5, high: int = 100) -> int:
+    return min(max(int(round(value)), low), high)
+
+def profile_market_points(c: dict, weights: dict) -> float:
+    pts = 0.0
+    if c["tier"] == 1:
+        pts += weights["tier1"]
+    elif c["tier"] == 2:
+        pts += weights["tier2"]
+    else:
+        pts += weights["other"]
 
     if c["role"] in ["SDE-I", "DS-I", "MLE-I", "OR-I"]:
         pts += weights["tech"]
 
-    if c["cgpa"] >= 8.5: pts += weights["cgpa_high"]
-    elif c["cgpa"] >= 7.0: pts += weights["cgpa_mid"]
-    else: pts += weights["cgpa_low"]
+    if c["cgpa"] >= 8.5:
+        pts += weights["cgpa_high"]
+    elif c["cgpa"] >= 7.0:
+        pts += weights["cgpa_mid"]
+    else:
+        pts += weights["cgpa_low"]
 
-    if c["intern_months"] == 6: pts += weights["intern6m"]
-    if c["intern_tier"] == 1: pts += weights["intern_tier1"]
+    if c["intern_months"] == 6:
+        pts += weights["intern6m"]
+    if c["intern_tier"] == 1:
+        pts += weights["intern_tier1"]
+    return round(pts, 1)
 
+def engagement_risk_points(eng: float, weights: dict) -> float:
+    """
+    Convert engagement into risk without a hard cliff at the critical/risky
+    boundaries. The existing sliders still control the ceiling and mid-band.
+    """
+    critical_threshold = weights["eng_critical_threshold"]
+    risky_threshold = weights["eng_risky_threshold"]
+    critical_cap = weights["eng_critical"]
+    risky_anchor = weights["eng_risky"]
+
+    if eng < critical_threshold:
+        return round(min(critical_cap, risky_anchor + (critical_threshold - eng) * 4), 1)
+
+    if eng < risky_threshold:
+        span = max(risky_threshold - critical_threshold, 1)
+        ratio = (risky_threshold - eng) / span
+        lower_anchor = max(8, risky_anchor * 0.45)
+        return round(lower_anchor + ratio * (risky_anchor - lower_anchor), 1)
+
+    safe_discount = abs(min(weights["eng_safe"], 0))
+    if safe_discount == 0:
+        return 0.0
+    ratio = min(max((eng - risky_threshold) / 8, 0), 1)
+    return round(-safe_discount * ratio, 1)
+
+def urgency_points(doj: str) -> int:
+    if doj == "May":
+        return 8
+    if doj == "Jun":
+        return 4
+    return 0
+
+def call_note_risk_points(call_risk: int) -> int:
+    if call_risk <= -6:
+        return 18
+    if call_risk <= -4:
+        return 14
+    if call_risk <= -3:
+        return 12
+    if call_risk <= -2:
+        return 8
+    if call_risk >= 5:
+        return -10
+    if call_risk >= 3:
+        return -6
+    return 0
+
+def follow_up_points(c: dict) -> int:
+    if c["called"]:
+        return 0
+    if c["doj"] == "May":
+        return 8
+    if c["doj"] == "Jun":
+        return 4
+    if c["intern_months"] == 6 or c["intern_tier"] == 1:
+        return 4
+    return 0
+
+def risk_category(c: dict, score: int, components: dict, label: str, weights: dict) -> tuple[str, str]:
+    if c.get("outcome") == "declined":
+        return "confirmed_decline", "Confirmed decline"
+    if c["call_risk"] <= -6:
+        return "high", "High risk"
+    high_threshold = weights["threshold"]
+    critical_high_threshold = max(weights["medium_threshold"], high_threshold - 5)
+    supporting_watch_threshold = max(1, weights["medium_threshold"] - 10)
+
+    if score >= high_threshold:
+        return "high", "High risk"
+    if label == "critical" and score >= critical_high_threshold:
+        return "high", "High risk"
+    if score >= weights["medium_threshold"]:
+        return "watch", "Watch"
+    if label == "critical":
+        return "watch", "Watch"
+    if score >= supporting_watch_threshold and (
+        not c["joining_form"]
+        or not c["gmeet_k"]
+        or c["intern_months"] == 6
+        or c["intern_tier"] == 1
+        or c["doj"] == "May"
+        or c["call_risk"] < 0
+    ):
+        return "watch", "Watch"
+    if not c["called"] and c["doj"] == "May" and (c["cgpa"] >= 8.5 or c["tier"] == 1):
+        return "watch", "Watch"
+    return "low", "Low"
+
+def risk_reasons(c: dict, eng: float, label: str, components: dict) -> list[str]:
+    reasons = []
+    if c.get("outcome") == "declined":
+        reasons.append("Confirmed declined outcome in sheet or outcomes file.")
+    if label == "critical":
+        reasons.append(f"Engagement score {eng:+.1f} is critical.")
+    elif label == "risky":
+        reasons.append(f"Engagement score {eng:+.1f} needs watching.")
+    if not c["joining_form"]:
+        reasons.append("Joining dates form is not filled.")
+    if not c["gmeet_k"]:
+        reasons.append("Kickoff meeting was missed.")
+    if c["intern_months"] == 6:
+        reasons.append("6-month internship can increase PPO or alternate-offer risk.")
+    if c["intern_tier"] == 1:
+        reasons.append("Tier-1 internship company suggests stronger outside-option risk.")
+    if c["doj"] == "May":
+        reasons.append("May DOJ needs faster recruiter action.")
+    elif c["doj"] == "Jun":
+        reasons.append("June DOJ is approaching soon.")
+    if not c["called"] and c["doj"] in {"May", "Jun"}:
+        reasons.append("No recruiter call is recorded for a near-term DOJ.")
+    if c["call_risk"] <= -6:
+        reasons.append("Call notes indicate the candidate has been hard to reach.")
+    elif c["call_risk"] <= -4:
+        reasons.append("Call notes mention higher studies or similar decline risk.")
+    elif c["call_risk"] <= -3:
+        reasons.append("Call notes mention PPO, competing offer, or placement elsewhere.")
+    elif c["call_risk"] <= -2:
+        reasons.append("Call notes contain a recruiter concern.")
+    elif c["call_risk"] >= 3:
+        reasons.append("Positive call notes reduce the score.")
+    if c["cgpa"] >= 8.5:
+        reasons.append("High CGPA may correlate with stronger outside options.")
+    if not reasons:
+        reasons.append("No major decline signal beyond the baseline profile.")
+    return reasons
+
+def calc_risk(c: dict, weights: dict) -> dict:
     eng = engagement_score(c, weights)
     label = engagement_label(eng, weights)
-    if label == "critical": pts += weights["eng_critical"]
-    elif label == "risky": pts += weights["eng_risky"]
-    else: pts += weights["eng_safe"]
+    components = {
+        "market": profile_market_points(c, weights),
+        "engagement": engagement_risk_points(eng, weights),
+        "urgency": urgency_points(c["doj"]),
+        "call_notes": call_note_risk_points(c["call_risk"]),
+        "follow_up": follow_up_points(c),
+    }
+    risk_score = clamp_score(sum(components.values()))
+    components["total"] = risk_score
+    category, category_label = risk_category(c, risk_score, components, label, weights)
 
     return {
-        "risk_pct": min(max(int(round(pts)), 5), 100),
+        "risk_pct": risk_score,
+        "risk_score": risk_score,
         "eng_score": eng,
         "eng_label": label,
+        "category": category,
+        "category_label": category_label,
+        "components": components,
+        "reasons": risk_reasons(c, eng, label, components),
     }
 
 # ── OUTCOMES PERSISTENCE ──────────────────────────────────────────────────────
@@ -512,7 +663,9 @@ def get_scores():
         "candidates": candidates,
         "weights": weights,
         "total": len(candidates),
-        "high_risk": sum(1 for c in candidates if c["risk_pct"] >= weights["threshold"]),
+        "high_risk": sum(1 for c in candidates if c["category"] in {"high", "confirmed_decline"}),
+        "watch": sum(1 for c in candidates if c["category"] == "watch"),
+        "low": sum(1 for c in candidates if c["category"] == "low"),
         "refreshed_at": datetime.now().isoformat(),
     }
 
