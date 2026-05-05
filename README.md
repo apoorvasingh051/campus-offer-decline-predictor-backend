@@ -4,7 +4,7 @@
 A FastAPI backend that:
 1. Reads your live Google Sheet (no API key needed)
 2. Scores all 245 candidates using the signal weights
-3. Exposes an authenticated REST API that the HTML frontend calls
+3. Exposes a REST API that the HTML frontend calls
 
 ## Files
 - `main.py` — all backend logic
@@ -18,7 +18,6 @@ A FastAPI backend that:
 
 | Variable | Purpose |
 |----------|---------|
-| `PREDICTOR_API_KEY` | Shared secret required in the `X-Predictor-Key` header for `/score`, `/weights`, and `/outcome` |
 | `ALLOWED_ORIGINS` | Comma-separated frontend origins allowed by CORS, e.g. `https://your-dashboard.example.com` |
 | `SHEET_ID` | Google Sheet ID. Defaults to the current tracker ID. |
 | `SHEET_NAME` | Sheet tab name. Defaults to `Main Tracker`. |
@@ -39,30 +38,24 @@ If you open `index.html` directly from disk during local testing, the browser or
 2. Click **New +** → **Web Service**
 3. Click **Connect** next to your `meesho-predictor-backend` repo
 4. Render auto-detects everything from `render.yaml`
-5. Add a secret value for `PREDICTOR_API_KEY`
-6. Set `ALLOWED_ORIGINS` to the exact URL where the dashboard will be opened
-7. Click **Create Web Service**
-8. Wait ~2 minutes for it to build
-9. Your API is live at: `https://meesho-predictor-backend.onrender.com`
+5. Set `ALLOWED_ORIGINS` to the exact URL where the dashboard will be opened
+6. Click **Create Web Service**
+7. Wait ~2 minutes for it to build
+8. Your API is live at: `https://meesho-predictor-backend.onrender.com`
 
 ### Step 3 — Test it
 Open in browser:
 ```
 https://meesho-predictor-backend.onrender.com/health
 ```
-You should see JSON with `"auth_configured": true`.
-
-To test `/score`, send the access key:
-```
-curl -H "X-Predictor-Key: YOUR_KEY" https://meesho-predictor-backend.onrender.com/score
-```
+You should see JSON with `"status": "healthy"`.
 
 ### Step 4 — Open the dashboard
 The bundled HTML app is served from:
 ```
 https://meesho-predictor-backend.onrender.com/app
 ```
-Enter the same backend access key in the dashboard's Data Source bar. The app will now pull live data from your sheet.
+The app will pull live data from your sheet.
 
 ## API Endpoints
 
@@ -76,11 +69,6 @@ Enter the same backend access key in the dashboard's Data Source bar. The app wi
 | POST | `/outcome` | Record a local fallback join/decline result |
 | GET | `/outcomes` | Return local fallback outcomes |
 | GET | `/health` | Health check |
-
-All endpoints except `/`, `/app`, and `/health` require:
-```
-X-Predictor-Key: YOUR_KEY
-```
 
 ## Column name mapping
 If your sheet column headers are named differently, edit `COL_MAP` in `main.py`.
@@ -99,4 +87,3 @@ Current mappings expect headers like:
 Render's free tier spins down after 15 minutes of inactivity.
 The first request after a spin-down takes ~30 seconds to wake up.
 Subsequent requests are fast. This is fine for internal HR tooling.
-
