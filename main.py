@@ -3,30 +3,62 @@ Meesho Campus Decline Predictor — FastAPI Backend
 Reads live data from Google Sheets, scores candidates, exposes REST API.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import requests
 import json
 import os
 import csv
+import re
+import tempfile
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
+from urllib.parse import quote
 
 app = FastAPI(title="Meesho Campus Predictor API")
 
-# Allow requests from any frontend (the HTML app, localhost, etc.)
+BASE_DIR = Path(__file__).resolve().parent
+
+
+def csv_env(name: str, fallback: list[str]) -> list[str]:
+    raw = os.getenv(name, "")
+    values = [v.strip() for v in raw.split(",") if v.strip()]
+    return values or fallback
+
+
+# CORS is intentionally narrow by default. Set ALLOWED_ORIGINS in production
+# to the exact frontend origins that should be allowed to call this API.
+ALLOWED_ORIGINS = csv_env(
+    "ALLOWED_ORIGINS",
+    [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8000",
+        "null",  # local file:// testing
+    ],
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
 # ── CONFIG ────────────────────────────────────────────────────────────────────
 
-SHEET_ID = "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI"
-WEIGHTS_FILE = "weights.json"
+SHEET_ID = os.getenv("SHEET_ID", "1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI")
+SHEET_NAME = os.getenv("SHEET_NAME", "Main Tracker")
+WEIGHTS_FILE = Path(os.getenv("WEIGHTS_FILE", BASE_DIR / "weights.json"))
+OUTCOMES_FILE = Path(os.getenv("OUTCOMES_FILE", BASE_DIR / "outcomes.csv"))
+API_KEY = os.getenv("PREDICTOR_API_KEY", "")
+API_KEY_HEADER = "X-Predictor-Key"
 
 # Column name mappings from your Google Sheet headers
 # Edit these if your sheet column names differ
@@ -59,27 +91,153 @@ TIER1_COMPANIES = [
     "uber", "airbnb", "stripe", "atlassian", "linkedin",
 ]
 
-# Default weights (used if weights.json doesn't exist yet)
+# Default weights (used if weights.json doesn't exist yet). These mirror the
+# frontend sliders and are the single backend source of truth for scoring.
 DEFAULT_WEIGHTS = {
-    "tier1": 18, "tier2": 10, "other": 5,
-    "tech": 10,
-    "cgpa_high": 14, "cgpa_mid": 7, "cgpa_low": 3,
-    "intern6m": 10, "intern_tier1": 10,
-    "eng_critical": 30, "eng_risky": 14, "eng_safe": -15,
-    "threshold": 65
+    "tier1": 0,
+    "tier2": 0,
+    "other": 0,
+    "tech": 0,
+    "cgpa_high": 15,
+    "cgpa_mid": 8,
+    "cgpa_low": 3,
+    "intern6m": 12,
+    "intern_tier1": 15,
+    "eng_critical": 45,
+    "eng_risky": 25,
+    "eng_safe": -10,
+    "threshold": 65,
+    "medium_threshold": 40,
+    "eng_jf_yes": 4,
+    "eng_jf_no": -3,
+    "eng_sw_yes": 1,
+    "eng_sw_no": -1,
+    "eng_gk_yes": 2,
+    "eng_gk_no": -1,
+    "eng_ga_yes": 2,
+    "eng_ga_no": -0.5,
+    "eng_li_mention": 3,
+    "eng_li_lc": 2,
+    "eng_li_c": 1.5,
+    "eng_li_l": 1,
+    "eng_call_pos_strong": 5,
+    "eng_call_pos_mild": 3,
+    "eng_call_ghost": -6,
+    "eng_call_mba": -4,
+    "eng_call_ppo": -4,
+    "eng_call_risky": -2,
+    "eng_critical_threshold": 4,
+    "eng_risky_threshold": 10,
 }
+
+WEIGHT_LIMITS = {
+    "tier1": (0, 30),
+    "tier2": (0, 30),
+    "other": (0, 30),
+    "tech": (0, 30),
+    "cgpa_high": (0, 30),
+    "cgpa_mid": (0, 30),
+    "cgpa_low": (0, 30),
+    "intern6m": (0, 30),
+    "intern_tier1": (0, 30),
+    "eng_critical": (0, 80),
+    "eng_risky": (0, 80),
+    "eng_safe": (-50, 20),
+    "threshold": (1, 100),
+    "medium_threshold": (1, 100),
+    "eng_jf_yes": (-20, 20),
+    "eng_jf_no": (-20, 20),
+    "eng_sw_yes": (-20, 20),
+    "eng_sw_no": (-20, 20),
+    "eng_gk_yes": (-20, 20),
+    "eng_gk_no": (-20, 20),
+    "eng_ga_yes": (-20, 20),
+    "eng_ga_no": (-20, 20),
+    "eng_li_mention": (-20, 20),
+    "eng_li_lc": (-20, 20),
+    "eng_li_c": (-20, 20),
+    "eng_li_l": (-20, 20),
+    "eng_call_pos_strong": (-20, 20),
+    "eng_call_pos_mild": (-20, 20),
+    "eng_call_ghost": (-20, 20),
+    "eng_call_mba": (-20, 20),
+    "eng_call_ppo": (-20, 20),
+    "eng_call_risky": (-20, 20),
+    "eng_critical_threshold": (-20, 30),
+    "eng_risky_threshold": (-20, 30),
+}
+
+# Keep high threshold above medium threshold even if a caller supplies both.
+ORDERED_THRESHOLDS = ("medium_threshold", "threshold")
 
 # ── WEIGHTS PERSISTENCE ───────────────────────────────────────────────────────
 
+def require_api_key(x_predictor_key: Optional[str] = Header(default=None, alias=API_KEY_HEADER)):
+    """Protect all endpoints that expose or mutate recruiting data."""
+    if not API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="PREDICTOR_API_KEY is not configured on the backend.",
+        )
+    if x_predictor_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Invalid or missing API key.")
+    return True
+
+
+def validate_weight_updates(payload: dict, strict: bool = True, base: Optional[dict] = None) -> dict:
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Weights payload must be an object.")
+
+    updates = {}
+    unknown = sorted(set(payload) - set(DEFAULT_WEIGHTS))
+    if strict and unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown weight keys: {', '.join(unknown)}")
+
+    for key, value in payload.items():
+        if key not in DEFAULT_WEIGHTS:
+            continue
+        if isinstance(value, bool):
+            raise HTTPException(status_code=400, detail=f"{key} must be numeric.")
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail=f"{key} must be numeric.")
+        low, high = WEIGHT_LIMITS[key]
+        if numeric < low or numeric > high:
+            raise HTTPException(status_code=400, detail=f"{key} must be between {low} and {high}.")
+        updates[key] = numeric
+
+    merged = {**DEFAULT_WEIGHTS, **(base or {}), **updates}
+    if merged[ORDERED_THRESHOLDS[0]] >= merged[ORDERED_THRESHOLDS[1]]:
+        raise HTTPException(status_code=400, detail="medium_threshold must be below threshold.")
+    if merged["eng_critical_threshold"] >= merged["eng_risky_threshold"]:
+        raise HTTPException(status_code=400, detail="eng_critical_threshold must be below eng_risky_threshold.")
+    return updates
+
+
+def atomic_json_write(path: Path, data: dict):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as tmp:
+        json.dump(data, tmp, indent=2)
+        tmp.write("\n")
+        temp_name = tmp.name
+    os.replace(temp_name, path)
+
+
 def load_weights() -> dict:
-    if os.path.exists(WEIGHTS_FILE):
-        with open(WEIGHTS_FILE) as f:
-            return json.load(f)
+    if WEIGHTS_FILE.exists():
+        try:
+            with open(WEIGHTS_FILE) as f:
+                raw = json.load(f)
+            updates = validate_weight_updates(raw, strict=False)
+            return {**DEFAULT_WEIGHTS, **updates}
+        except (OSError, json.JSONDecodeError, HTTPException):
+            return DEFAULT_WEIGHTS.copy()
     return DEFAULT_WEIGHTS.copy()
 
 def save_weights(w: dict):
-    with open(WEIGHTS_FILE, "w") as f:
-        json.dump(w, f, indent=2)
+    updates = validate_weight_updates(w, strict=True)
+    atomic_json_write(WEIGHTS_FILE, {**DEFAULT_WEIGHTS, **updates})
 
 # ── GOOGLE SHEETS READER ──────────────────────────────────────────────────────
 
@@ -88,8 +246,12 @@ def fetch_sheet_data() -> list[dict]:
     Reads the Google Sheet as CSV (no API key needed — sheet must be public viewer).
     Returns a list of row dicts with raw string values.
     """
-    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet=Main%20Tracker"
-    resp = requests.get(url, timeout=10)
+    sheet_name = quote(SHEET_NAME)
+    url = f"https://docs.google.com/spreadsheets/d/{SHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_name}"
+    try:
+        resp = requests.get(url, timeout=10)
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Could not reach Google Sheet: {exc}") from exc
     if resp.status_code != 200:
         raise HTTPException(status_code=502, detail=f"Could not reach Google Sheet (status {resp.status_code}). Make sure it is set to 'Anyone with link can view'.")
     
@@ -129,14 +291,25 @@ def parse_bool(val: str) -> int:
 def parse_cgpa(val: str) -> float:
     try:
         return float(str(val).strip())
-    except:
+    except (TypeError, ValueError):
         return 7.5  # default mid-band
 
 def parse_college_tier(college: str) -> int:
-    c = college.lower()
-    if any(k in c for k in ["iit", "iisc", "iiit hyderabad", "bits"]):
+    c = re.sub(r"[^a-z0-9]+", " ", (college or "").lower()).strip()
+    if not c:
+        return 3
+
+    # Explicit exceptions first, then token-aware checks so "IIIT" is not
+    # accidentally treated as "IIT".
+    if "iiit hyderabad" in c or "international institute of information technology hyderabad" in c:
         return 1
-    if any(k in c for k in ["nit", "iiit", "vit", "srm", "manipal"]):
+    if re.search(r"\biit\b", c) or "indian institute of technology" in c:
+        return 1
+    if re.search(r"\biisc\b", c) or "indian institute of science" in c:
+        return 1
+    if re.search(r"\bbits\b", c) or "birla institute of technology and science" in c:
+        return 1
+    if re.search(r"\b(nit|iiit|vit|srm|manipal)\b", c):
         return 2
     return 3
 
@@ -193,24 +366,36 @@ def parse_offer_status(status: str) -> str:
 
 # ── SCORING ENGINE ────────────────────────────────────────────────────────────
 
-def engagement_score(c: dict) -> float:
+def engagement_score(c: dict, weights: dict) -> float:
     eng = 0.0
-    eng += 4 if c["joining_form"] else -2
-    eng += 1 if c["swag_form"] else -1
-    eng += 2 if c["gmeet_k"] else -0.5
-    eng += 2 if c["gmeet_a"] else -0.5
-    if c["li_mention"]: eng += 3
-    if c["li_lc"]: eng += 2
-    if c["li_c"]: eng += 1.5
-    if c["li_l"]: eng += 1
+    eng += weights["eng_jf_yes"] if c["joining_form"] else weights["eng_jf_no"]
+    eng += weights["eng_sw_yes"] if c["swag_form"] else weights["eng_sw_no"]
+    eng += weights["eng_gk_yes"] if c["gmeet_k"] else weights["eng_gk_no"]
+    eng += weights["eng_ga_yes"] if c["gmeet_a"] else weights["eng_ga_no"]
+    if c["li_mention"]: eng += weights["eng_li_mention"]
+    if c["li_lc"]: eng += weights["eng_li_lc"]
+    if c["li_c"]: eng += weights["eng_li_c"]
+    if c["li_l"]: eng += weights["eng_li_l"]
     if c["intern_months"] == 6: eng -= 2
     if c["intern_tier"] == 1: eng -= 2
-    eng += c["call_risk"]
+    call_risk = c["call_risk"]
+    if call_risk >= 5:
+        eng += weights["eng_call_pos_strong"]
+    elif call_risk >= 3:
+        eng += weights["eng_call_pos_mild"]
+    elif call_risk <= -6:
+        eng += weights["eng_call_ghost"]
+    elif call_risk <= -4:
+        eng += weights["eng_call_mba"]
+    elif call_risk <= -3:
+        eng += weights["eng_call_ppo"]
+    elif call_risk <= -2:
+        eng += weights["eng_call_risky"]
     return round(eng, 1)
 
-def engagement_label(score: float) -> str:
-    if score < 4: return "critical"
-    if score < 10: return "risky"
+def engagement_label(score: float, weights: dict) -> str:
+    if score < weights["eng_critical_threshold"]: return "critical"
+    if score < weights["eng_risky_threshold"]: return "risky"
     return "safe"
 
 def calc_risk(c: dict, weights: dict) -> dict:
@@ -229,27 +414,65 @@ def calc_risk(c: dict, weights: dict) -> dict:
     if c["intern_months"] == 6: pts += weights["intern6m"]
     if c["intern_tier"] == 1: pts += weights["intern_tier1"]
 
-    eng = engagement_score(c)
-    label = engagement_label(eng)
+    eng = engagement_score(c, weights)
+    label = engagement_label(eng, weights)
     if label == "critical": pts += weights["eng_critical"]
     elif label == "risky": pts += weights["eng_risky"]
     else: pts += weights["eng_safe"]
 
     return {
-        "risk_pct": min(max(int(pts), 5), 100),
+        "risk_pct": min(max(int(round(pts)), 5), 100),
         "eng_score": eng,
         "eng_label": label,
     }
 
 # ── OUTCOMES PERSISTENCE ──────────────────────────────────────────────────────
 
+def load_outcome_rows() -> list[dict]:
+    if not OUTCOMES_FILE.exists():
+        return []
+    with open(OUTCOMES_FILE, newline="") as f:
+        reader = csv.DictReader(f)
+        return [
+            {
+                "name": (row.get("name") or "").strip(),
+                "outcome": (row.get("outcome") or "").strip().lower(),
+                "timestamp": row.get("timestamp") or "",
+            }
+            for row in reader
+            if (row.get("name") or "").strip()
+        ]
+
+
+def atomic_csv_write(path: Path, rows: list[dict]):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False, newline="") as tmp:
+        writer = csv.DictWriter(tmp, fieldnames=["name", "outcome", "timestamp"])
+        writer.writeheader()
+        writer.writerows(rows)
+        temp_name = tmp.name
+    os.replace(temp_name, path)
+
+
 def load_outcomes() -> dict:
-    """Outcomes come from sheet Offer Status column only — no local file needed."""
-    return {}
+    """Return locally recorded outcomes, latest row wins for duplicate names."""
+    outcomes = {}
+    for row in load_outcome_rows():
+        if row["outcome"] in {"joined", "declined"}:
+            outcomes[row["name"]] = row["outcome"]
+    return outcomes
 
 def save_outcome(name: str, outcome: str):
-    """Outcomes are managed in the Google Sheet — nothing to save locally."""
-    pass
+    name = (name or "").strip()
+    outcome = (outcome or "").strip().lower()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    if outcome not in {"joined", "declined"}:
+        raise HTTPException(status_code=400, detail="outcome must be 'joined' or 'declined'")
+
+    rows = [row for row in load_outcome_rows() if row["name"] != name]
+    rows.append({"name": name, "outcome": outcome, "timestamp": datetime.now().isoformat()})
+    atomic_csv_write(OUTCOMES_FILE, rows)
 
 # ── MAIN PIPELINE ─────────────────────────────────────────────────────────────
 
@@ -307,8 +530,15 @@ def build_candidates(raw_rows: list[dict], weights: dict) -> list[dict]:
 def root():
     return {"status": "ok", "service": "Meesho Campus Predictor API"}
 
+@app.get("/app")
+def dashboard():
+    index_path = BASE_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard file not found.")
+    return FileResponse(index_path)
+
 @app.get("/score")
-def get_scores():
+def get_scores(_: bool = Depends(require_api_key)):
     """Pull latest sheet data, score all candidates, return ranked list."""
     weights = load_weights()
     raw = fetch_sheet_data()
@@ -322,36 +552,25 @@ def get_scores():
     }
 
 @app.get("/weights")
-def get_weights():
+def get_weights(_: bool = Depends(require_api_key)):
     """Return current signal weights."""
     return load_weights()
 
-class WeightsPayload(BaseModel):
-    tier1: float = 18
-    tier2: float = 10
-    other: float = 5
-    tech: float = 10
-    cgpa_high: float = 14
-    cgpa_mid: float = 7
-    cgpa_low: float = 3
-    intern6m: float = 10
-    intern_tier1: float = 10
-    eng_critical: float = 30
-    eng_risky: float = 14
-    eng_safe: float = -15
-    threshold: float = 65
-
 @app.post("/weights")
-async def update_weights(payload: dict):
+async def update_weights(payload: dict, _: bool = Depends(require_api_key)):
     """Save new weights and return confirmation."""
-    weights = {**DEFAULT_WEIGHTS, **payload}
+    current = load_weights()
+    updates = validate_weight_updates(payload, strict=True, base=current)
+    weights = {**current, **updates}
     save_weights(weights)
     return {"status": "saved", "weights": weights}
 
 @app.post("/weights/save")
-async def save_weights_endpoint(payload: dict):
+async def save_weights_endpoint(payload: dict, _: bool = Depends(require_api_key)):
     """Save weights to disk so all users get them on next load."""
-    weights = {**DEFAULT_WEIGHTS, **payload}
+    current = load_weights()
+    updates = validate_weight_updates(payload, strict=True, base=current)
+    weights = {**current, **updates}
     save_weights(weights)
     return {"status": "saved", "weights": weights, "saved_at": datetime.now().isoformat()}
 
@@ -360,18 +579,25 @@ class OutcomePayload(BaseModel):
     outcome: str  # "joined" or "declined"
 
 @app.post("/outcome")
-def record_outcome(payload: OutcomePayload):
+def record_outcome(payload: OutcomePayload, _: bool = Depends(require_api_key)):
     """Record a join/decline outcome for future model training."""
-    if payload.outcome not in ["joined", "declined"]:
+    outcome = payload.outcome.strip().lower()
+    if outcome not in ["joined", "declined"]:
         raise HTTPException(status_code=400, detail="outcome must be 'joined' or 'declined'")
-    save_outcome(payload.name, payload.outcome)
-    return {"status": "recorded", "name": payload.name, "outcome": payload.outcome}
+    save_outcome(payload.name, outcome)
+    return {"status": "recorded", "name": payload.name.strip(), "outcome": outcome}
 
 @app.get("/outcomes")
-def get_outcomes():
-    """Outcomes are read live from the sheet Offer Status column."""
-    return {"message": "Outcomes are read from Google Sheet Offer Status column in real time"}
+def get_outcomes(_: bool = Depends(require_api_key)):
+    """Return locally recorded outcomes used when the sheet has no outcome."""
+    outcomes = load_outcomes()
+    return {"outcomes": outcomes, "total": len(outcomes)}
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "sheet_id": SHEET_ID}
+    return {
+        "status": "healthy",
+        "auth_configured": bool(API_KEY),
+        "allowed_origins": ALLOWED_ORIGINS,
+        "sheet_configured": bool(SHEET_ID),
+    }
