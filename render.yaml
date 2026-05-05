@@ -6,8 +6,6 @@ services:
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
     envVars:
-      - key: PREDICTOR_API_KEY
-        sync: false
       - key: ALLOWED_ORIGINS
         value: https://campus-offer-decline-predictor-backend.onrender.com
       - key: SHEET_ID
