@@ -716,7 +716,8 @@
     <div class="panel section" style="margin-bottom:16px;">
       <div class="api-section">
         <span style="font-size:10px;color:var(--text3);white-space:nowrap;">DATA SOURCE</span>
-        <span style="font-size:11px;color:var(--text2);flex:1;">campus-offer-decline-predictor-backend.onrender.com</span>
+        <span style="font-size:11px;color:var(--text2);flex:1;" id="backendSource">campus-offer-decline-predictor-backend.onrender.com</span>
+        <input type="password" class="api-input" id="backendKey" placeholder="backend access key" autocomplete="off" oninput="syncBackendKey(this.value)" style="flex:0 1 220px;">
         <span class="api-status api-empty" id="backendStatus">CONNECTING...</span>
         <button class="btn btn-ghost" onclick="refreshFromBackend()" id="refreshBtn">↻ REFRESH</button>
       </div>
@@ -730,7 +731,7 @@
       <div id="emptyState" style="display:none;text-align:center;padding:60px 20px;color:var(--text3);">
         <div style="font-size:32px;margin-bottom:12px;">📡</div>
         <div style="font-family:var(--font-display);font-size:16px;color:var(--text2);margin-bottom:8px;">No backend connected</div>
-        <div style="font-size:12px;">Enter your Render backend URL above and click ↻ REFRESH to load live data from your Google Sheet</div>
+        <div style="font-size:12px;">Enter the backend access key above and click ↻ REFRESH to load live data from your Google Sheet</div>
       </div>
       <div class="kpi-strip section" id="kpiStrip"></div>
 
@@ -916,8 +917,8 @@
             </div>
             <div class="weight-row">
               <div class="weight-label">Min % for MEDIUM band<div class="weight-rec">↑ REC: 40% · 40-64 band gives ~30 medium risk</div></div>
-              <div class="weight-val" id="wt_medium_threshold">58</div>
-              <input type="range" min="40" max="67" value="58" oninput="updateWeight('medium_threshold', this.value)">
+              <div class="weight-val" id="wt_medium_threshold">40</div>
+              <input type="range" min="30" max="67" value="40" oninput="updateWeight('medium_threshold', this.value)">
               <div class="weight-val-right">%</div>
             </div>
           </div>
@@ -1102,9 +1103,103 @@ let ENG_WEIGHTS = {
   eng_critical_threshold: 4, eng_risky_threshold: 10
 };
 
+const ENG_WEIGHT_PAYLOAD_KEYS = {
+  jf_yes: 'eng_jf_yes',
+  jf_no: 'eng_jf_no',
+  sw_yes: 'eng_sw_yes',
+  sw_no: 'eng_sw_no',
+  gk_yes: 'eng_gk_yes',
+  gk_no: 'eng_gk_no',
+  ga_yes: 'eng_ga_yes',
+  ga_no: 'eng_ga_no',
+  li_mention: 'eng_li_mention',
+  li_lc: 'eng_li_lc',
+  li_c: 'eng_li_c',
+  li_l: 'eng_li_l',
+  call_pos_strong: 'eng_call_pos_strong',
+  call_pos_mild: 'eng_call_pos_mild',
+  call_ghost: 'eng_call_ghost',
+  call_mba: 'eng_call_mba',
+  call_ppo: 'eng_call_ppo',
+  call_risky: 'eng_call_risky',
+  eng_critical_threshold: 'eng_critical_threshold',
+  eng_risky_threshold: 'eng_risky_threshold',
+};
+
+function syncWeightControls() {
+  Object.entries(WEIGHTS).forEach(([k, v]) => {
+    const el = document.getElementById('wt_' + k);
+    if (el) el.textContent = v;
+    const slider = document.querySelector(`input[oninput*="updateWeight('${k}'"]`);
+    if (slider) slider.value = v;
+  });
+  Object.entries(ENG_WEIGHTS).forEach(([k, v]) => {
+    const el = document.getElementById('ew_' + k);
+    if (el) el.textContent = v > 0 ? '+' + v : v;
+    const slider = document.querySelector(`input[oninput*="updateEngWeight('${k}'"]`);
+    if (slider) slider.value = v;
+  });
+}
+
+function applyWeightsFromBackend(weights) {
+  if (!weights) return;
+  Object.keys(WEIGHTS).forEach(k => {
+    if (weights[k] !== undefined) WEIGHTS[k] = Number(weights[k]);
+  });
+  Object.entries(ENG_WEIGHT_PAYLOAD_KEYS).forEach(([localKey, remoteKey]) => {
+    if (weights[remoteKey] !== undefined) ENG_WEIGHTS[localKey] = Number(weights[remoteKey]);
+  });
+  syncWeightControls();
+}
+
+function buildWeightsPayload() {
+  const payload = { ...WEIGHTS };
+  Object.entries(ENG_WEIGHT_PAYLOAD_KEYS).forEach(([localKey, remoteKey]) => {
+    payload[remoteKey] = ENG_WEIGHTS[localKey];
+  });
+  return payload;
+}
+
 // Outcomes (can be updated by recruiter)
 let OUTCOMES = {};
 // outcomes populated from backend sheet data only
+
+const HTML_ESCAPE = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, ch => HTML_ESCAPE[ch]);
+}
+
+function fmtDelta(value) {
+  const n = Number(value);
+  return n > 0 ? '+' + n : String(n);
+}
+
+function candidateToken(name) {
+  return encodeURIComponent(String(name ?? ''));
+}
+
+function openDetailByToken(token) {
+  openDetail(decodeURIComponent(token));
+}
+
+function getAISingleByToken(token) {
+  getAISingle(decodeURIComponent(token));
+}
+
+function setBoxText(target, text, isError) {
+  const box = document.createElement('div');
+  box.className = 'ai-box';
+  if (isError) box.style.color = 'var(--accent)';
+  box.textContent = text;
+  target.replaceChildren(box);
+}
 
 // =====================================================================
 // SCORING ENGINE
@@ -1150,13 +1245,21 @@ function updateEngWeight(key, val) {
     renderAction();
     renderSearch();
     populateAISelect();
+    pushWeightsToBackend(buildWeightsPayload());
   }, 350);
 }
 
 function calcRisk(c, weights) {
   weights = weights || WEIGHTS;
   let pts = 0;
-  // College tier & role removed — not differentiators in this cohort
+  if (c.tier === 1) pts += weights.tier1 || 0;
+  else if (c.tier === 2) pts += weights.tier2 || 0;
+  else pts += weights.other || 0;
+
+  if (['SDE-I', 'DS-I', 'MLE-I', 'OR-I'].includes(c.role)) {
+    pts += weights.tech || 0;
+  }
+
   if (c.cgpa >= 8.5) pts += weights.cgpa_high;
   else if (c.cgpa >= 7.0) pts += weights.cgpa_mid;
   else pts += weights.cgpa_low;
@@ -1171,7 +1274,7 @@ function calcRisk(c, weights) {
   else pts += weights.eng_safe;
   
   return {
-    risk_pct: Math.min(Math.max(pts, 5), 100),
+    risk_pct: Math.min(Math.max(Math.round(pts), 5), 100),
     eng_score: eng,
     eng_label: label
   };
@@ -1193,7 +1296,7 @@ function scoredCandidates(weights) {
 // =====================================================================
 function riskColor(pct, threshold) {
   threshold = threshold || WEIGHTS.threshold;
-  const medium = WEIGHTS.medium_threshold || 45;
+  const medium = WEIGHTS.medium_threshold || 40;
   if (pct >= threshold) return 'var(--accent)';
   if (pct >= medium) return 'var(--amber)';
   return 'var(--green)';
@@ -1228,7 +1331,7 @@ function signalDots(c) {
 
 function dojBadge(doj) {
   const cls = doj === 'May' ? 'doj-may' : doj === 'Jun' ? 'doj-jun' : 'doj-jul';
-  return `<span class="doj-badge ${cls}">${doj}</span>`;
+  return `<span class="doj-badge ${cls}">${esc(doj)}</span>`;
 }
 
 function candidateRow(c, rank, showOutcome) {
@@ -1236,13 +1339,14 @@ function candidateRow(c, rank, showOutcome) {
   const engCls = riskClass(c.eng_label);
   const isDeclined = OUTCOMES[c.name] === 'declined';
   const isJoined = OUTCOMES[c.name] === 'joined';
+  const token = esc(candidateToken(c.name));
   
-  return `<div class="candidate-card ${isDeclined ? 'declined' : ''}" onclick="openDetail('${c.name}')">
+  return `<div class="candidate-card ${isDeclined ? 'declined' : ''}" data-candidate="${token}" onclick="openDetailByToken(this.dataset.candidate)">
     <div class="rank">${rank}</div>
     <div class="risk-pill ${engCls}">${c.eng_label[0].toUpperCase()}</div>
     <div>
-      <div class="candidate-name">${c.name}</div>
-      <div class="candidate-sub">${c.college} · ${c.role}</div>
+      <div class="candidate-name">${esc(c.name)}</div>
+      <div class="candidate-sub">${esc(c.college)} · ${esc(c.role)}</div>
     </div>
     <div>${signalDots(c)}</div>
     <div class="risk-bar-wrap">
@@ -1290,8 +1394,8 @@ function renderDashboard() {
   const active = all; // include declined — they validate model accuracy
   // All counts for KPI display
   const highAll = active.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  const mediumAll = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold);
-  const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
+  const mediumAll = active.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold);
+  const low = active.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40));
   // Display slices
   const top10 = active.slice(0, 10);
   const medium = mediumAll.slice(0, 30);
@@ -1301,8 +1405,8 @@ function renderDashboard() {
   document.getElementById('kpiStrip').innerHTML = `
     <div class="kpi"><div class="kpi-label">Total Offers</div><div class="kpi-value kpi-blue">${all.length}</div><div class="kpi-sub">2026 cohort</div></div>
     <div class="kpi"><div class="kpi-label">🔴 High Risk</div><div class="kpi-value kpi-red">${highAll.length}</div><div class="kpi-sub">≥${WEIGHTS.threshold}% · showing top 10</div></div>
-    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${mediumAll.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold||45}–${WEIGHTS.threshold-1}% · showing top 30</div></div>
-    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold||45}% · safe</div></div>
+    <div class="kpi"><div class="kpi-label">🟡 Medium Risk</div><div class="kpi-value kpi-amber">${mediumAll.length}</div><div class="kpi-sub">${WEIGHTS.medium_threshold||40}–${WEIGHTS.threshold-1}% · showing top 30</div></div>
+    <div class="kpi"><div class="kpi-label">🟢 OK</div><div class="kpi-value kpi-green">${low.length}</div><div class="kpi-sub">&lt;${WEIGHTS.medium_threshold||40}% · safe</div></div>
     <div class="kpi"><div class="kpi-label">Confirmed Declines</div><div class="kpi-value kpi-confirmed">${declines}</div><div class="kpi-sub">from sheet outcomes</div></div>
     <div class="kpi"><div class="kpi-label">May DOJ (URGENT)</div><div class="kpi-value kpi-red">${highAll.filter(c=>c.doj==='May').length}</div><div class="kpi-sub">high risk · ≤6 weeks</div></div>
   `;
@@ -1343,20 +1447,21 @@ function renderAction() {
   const all = scoredCandidates();
   const highAll = all.filter(c => c.risk_pct >= WEIGHTS.threshold && !OUTCOMES[c.name]);
   const high = highAll.slice(0, 10); // show top 10 only
-  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||58) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]).slice(0, 30);
-  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||58) && !OUTCOMES[c.name]);
+  const medium = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold && !OUTCOMES[c.name]).slice(0, 30);
+  const safe = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40) && !OUTCOMES[c.name]);
 
   document.getElementById('criticalCount').textContent = `TOP 10 OF ${highAll.length} HIGH RISK`;
-  document.getElementById('riskyCount').textContent = `TOP 30 OF ${all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||58) && c.risk_pct < WEIGHTS.threshold).length} MEDIUM RISK`;
+  document.getElementById('riskyCount').textContent = `TOP 30 OF ${all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold).length} MEDIUM RISK`;
   document.getElementById('safeCount').textContent = `${safe.length} CANDIDATES`;
 
   function queueCard(c) {
-    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="openDetail('${c.name}')">
+    const token = esc(candidateToken(c.name));
+    return `<div style="padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;" data-candidate="${token}" onclick="openDetailByToken(this.dataset.candidate)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-family:var(--font-display);font-size:12px;font-weight:700;">${c.name}</span>
+        <span style="font-family:var(--font-display);font-size:12px;font-weight:700;">${esc(c.name)}</span>
         <span style="color:${riskColor(c.risk_pct)};font-size:12px;font-weight:500;">${c.risk_pct}%</span>
       </div>
-      <div style="font-size:10px;color:var(--text3);">${c.college} · ${c.role} · ${c.doj} DOJ</div>
+      <div style="font-size:10px;color:var(--text3);">${esc(c.college)} · ${esc(c.role)} · ${esc(c.doj)} DOJ</div>
       <div style="margin-top:6px;">${signalDots(c)}</div>
     </div>`;
   }
@@ -1385,8 +1490,8 @@ function renderSearch() {
   }
   
   if (currentFilter === 'high') all = all.filter(c => c.risk_pct >= WEIGHTS.threshold);
-  else if (currentFilter === 'medium') all = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||45) && c.risk_pct < WEIGHTS.threshold);
-  else if (currentFilter === 'low') all = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||45));
+  else if (currentFilter === 'medium') all = all.filter(c => c.risk_pct >= (WEIGHTS.medium_threshold||40) && c.risk_pct < WEIGHTS.threshold);
+  else if (currentFilter === 'low') all = all.filter(c => c.risk_pct < (WEIGHTS.medium_threshold||40));
   else if (currentFilter === 'may') all = all.filter(c => c.doj === 'May');
   else if (currentFilter === 'jun') all = all.filter(c => c.doj === 'Jun');
   else if (currentFilter === 'jul') all = all.filter(c => c.doj === 'Jul');
@@ -1411,7 +1516,7 @@ function updateWeight(key, val) {
     renderAction();
     renderSearch();
     populateAISelect();
-    pushWeightsToBackend(WEIGHTS);
+    pushWeightsToBackend(buildWeightsPayload());
   }, 350);
 }
 
@@ -1425,7 +1530,7 @@ function renderLiveRankings() {
     return `<div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
       <div>
         <span style="font-size:10px;color:var(--text3);margin-right:8px;">${i+1}</span>
-        <span style="font-family:var(--font-display);font-size:12px;font-weight:600;">${c.name}</span>
+        <span style="font-family:var(--font-display);font-size:12px;font-weight:600;">${esc(c.name)}</span>
         ${isDeclined ? '<span style="margin-left:6px;font-size:9px;color:var(--purple)">↑CONFIRMED</span>' : ''}
       </div>
       <span style="color:${color};font-size:13px;font-weight:700;">${c.risk_pct}%</span>
@@ -1446,13 +1551,15 @@ function openDetail(name) {
   if (!c) return;
   
   const color = riskColor(c.risk_pct);
+  const token = esc(candidateToken(c.name));
+  const outcome = OUTCOMES[c.name];
   
   document.getElementById('detailPanel').innerHTML = `
     <div class="detail-header">
       <div>
-        <div class="detail-name">${c.name}</div>
-        <div class="detail-sub">${c.college} · ${c.role} · CGPA ${c.cgpa} · ${c.doj} DOJ</div>
-        ${OUTCOMES[c.name] === 'declined' ? '<div style="margin-top:6px;"><span class="confirmed-badge">CONFIRMED DECLINE ✓</span></div>' : ''}
+        <div class="detail-name">${esc(c.name)}</div>
+        <div class="detail-sub">${esc(c.college)} · ${esc(c.role)} · CGPA ${esc(c.cgpa)} · ${esc(c.doj)} DOJ</div>
+        ${outcome === 'declined' ? '<div style="margin-top:6px;"><span class="confirmed-badge">CONFIRMED DECLINE ✓</span></div>' : ''}
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="text-align:center;">
@@ -1464,21 +1571,21 @@ function openDetail(name) {
     </div>
     <div class="detail-body">
       <div class="signal-grid">
-        <div class="signal-item"><span class="signal-item-label">Joining Dates Form</span><span class="signal-item-val ${c.joining_form ? 'sig-pos' : 'sig-neg'}">${c.joining_form ? '✓ Filled (+4)' : '✗ Not filled (−2)'}</span></div>
-        <div class="signal-item"><span class="signal-item-label">SWAG Form</span><span class="signal-item-val ${c.swag_form ? 'sig-pos' : 'sig-neg'}">${c.swag_form ? '✓ Filled (+1)' : '✗ Not filled (−1)'}</span></div>
-        <div class="signal-item"><span class="signal-item-label">Gmeet Kickoff</span><span class="signal-item-val ${c.gmeet_k ? 'sig-pos' : 'sig-neg'}">${c.gmeet_k ? '✓ Attended (+2)' : '✗ Missed (−0.5)'}</span></div>
-        <div class="signal-item"><span class="signal-item-label">Gmeet AMA</span><span class="signal-item-val ${c.gmeet_a ? 'sig-pos' : 'sig-neg'}">${c.gmeet_a ? '✓ Attended (+2)' : '✗ Missed (−0.5)'}</span></div>
-        <div class="signal-item"><span class="signal-item-label">LI Meesho Mention</span><span class="signal-item-val ${c.li_mention ? 'sig-pos' : 'sig-neu'}">${c.li_mention ? '✓ Yes (+3)' : '— No (0)'}</span></div>
-        <div class="signal-item"><span class="signal-item-label">LinkedIn Activity</span><span class="signal-item-val ${(c.li_lc||c.li_c||c.li_l) ? 'sig-pos' : 'sig-neu'}">${c.li_lc ? 'Liked+Comment (+2)' : c.li_c ? 'Commented (+1.5)' : c.li_l ? 'Liked (+1)' : '— None (0)'}</span></div>
+        <div class="signal-item"><span class="signal-item-label">Joining Dates Form</span><span class="signal-item-val ${c.joining_form ? 'sig-pos' : 'sig-neg'}">${c.joining_form ? `✓ Filled (${fmtDelta(ENG_WEIGHTS.jf_yes)})` : `✗ Not filled (${fmtDelta(ENG_WEIGHTS.jf_no)})`}</span></div>
+        <div class="signal-item"><span class="signal-item-label">SWAG Form</span><span class="signal-item-val ${c.swag_form ? 'sig-pos' : 'sig-neg'}">${c.swag_form ? `✓ Filled (${fmtDelta(ENG_WEIGHTS.sw_yes)})` : `✗ Not filled (${fmtDelta(ENG_WEIGHTS.sw_no)})`}</span></div>
+        <div class="signal-item"><span class="signal-item-label">Gmeet Kickoff</span><span class="signal-item-val ${c.gmeet_k ? 'sig-pos' : 'sig-neg'}">${c.gmeet_k ? `✓ Attended (${fmtDelta(ENG_WEIGHTS.gk_yes)})` : `✗ Missed (${fmtDelta(ENG_WEIGHTS.gk_no)})`}</span></div>
+        <div class="signal-item"><span class="signal-item-label">Gmeet AMA</span><span class="signal-item-val ${c.gmeet_a ? 'sig-pos' : 'sig-neg'}">${c.gmeet_a ? `✓ Attended (${fmtDelta(ENG_WEIGHTS.ga_yes)})` : `✗ Missed (${fmtDelta(ENG_WEIGHTS.ga_no)})`}</span></div>
+        <div class="signal-item"><span class="signal-item-label">LI Meesho Mention</span><span class="signal-item-val ${c.li_mention ? 'sig-pos' : 'sig-neu'}">${c.li_mention ? `✓ Yes (${fmtDelta(ENG_WEIGHTS.li_mention)})` : '— No (0)'}</span></div>
+        <div class="signal-item"><span class="signal-item-label">LinkedIn Activity</span><span class="signal-item-val ${(c.li_lc||c.li_c||c.li_l) ? 'sig-pos' : 'sig-neu'}">${c.li_lc ? `Liked+Comment (${fmtDelta(ENG_WEIGHTS.li_lc)})` : c.li_c ? `Commented (${fmtDelta(ENG_WEIGHTS.li_c)})` : c.li_l ? `Liked (${fmtDelta(ENG_WEIGHTS.li_l)})` : '— None (0)'}</span></div>
         <div class="signal-item"><span class="signal-item-label">Internship Duration</span><span class="signal-item-val ${c.intern_months === 6 ? 'sig-neg' : 'sig-neu'}">${c.intern_months === 6 ? '⚠ 6-Month (−2)' : '2-Month (0)'}</span></div>
         <div class="signal-item"><span class="signal-item-label">Internship Company</span><span class="signal-item-val ${c.intern_tier === 1 ? 'sig-neg' : 'sig-neu'}">${c.intern_tier === 1 ? '⚠ Tier-1 FAANG (−2)' : 'Standard (0)'}</span></div>
         <div class="signal-item"><span class="signal-item-label">Call Notes</span><span class="signal-item-val ${c.call_risk < 0 ? 'sig-neg' : c.call_risk > 0 ? 'sig-pos' : 'sig-neu'}">${c.called ? (c.call_risk < 0 ? `⚠ Negative (${c.call_risk})` : c.call_risk > 0 ? `✓ Positive (+${c.call_risk})` : 'Neutral') : '— Not called yet'}</span></div>
         <div class="signal-item"><span class="signal-item-label">Engagement Score</span><span class="signal-item-val ${c.eng_score < 4 ? 'sig-neg' : c.eng_score < 10 ? '' : 'sig-pos'}" style="${c.eng_score >= 4 && c.eng_score < 10 ? 'color:var(--amber)' : ''}">${c.eng_score > 0 ? '+' : ''}${c.eng_score.toFixed(1)} (${c.eng_label.toUpperCase()})</span></div>
       </div>
-      ${c.call_note ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;">RECRUITER NOTES</div><div style="font-size:12px;color:var(--text2);">"${c.call_note}"</div></div>` : ''}
+      ${c.call_note ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;margin-bottom:16px;"><div style="font-size:10px;color:var(--text3);margin-bottom:6px;">RECRUITER NOTES</div><div style="font-size:12px;color:var(--text2);">"${esc(c.call_note)}"</div></div>` : ''}
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="getAISingle('${c.name}')">GET AI RECOMMENDATION</button>
-        ${OUTCOMES[c.name] ? `<span style="font-size:12px;color:var(--text3);padding:8px 0;">Outcome: <strong style="color:${OUTCOMES[c.name]==='declined'?'var(--purple)':'var(--green)'}">${OUTCOMES[c.name].toUpperCase()}</strong> (update in Google Sheet)</span>` : '<span style="font-size:11px;color:var(--text3);padding:8px 0;">Update outcome in Google Sheet → hit Refresh</span>'}
+        <button class="btn btn-primary" data-candidate="${token}" onclick="getAISingleByToken(this.dataset.candidate)">GET AI RECOMMENDATION</button>
+        ${outcome ? `<span style="font-size:12px;color:var(--text3);padding:8px 0;">Outcome: <strong style="color:${outcome==='declined'?'var(--purple)':'var(--green)'}">${esc(outcome.toUpperCase())}</strong> (update in Google Sheet)</span>` : '<span style="font-size:11px;color:var(--text3);padding:8px 0;">Update outcome in Google Sheet → hit Refresh</span>'}
       </div>
       <div id="detailAI"></div>
     </div>
@@ -1584,9 +1691,9 @@ async function getAISingle(name) {
   
   try {
     const result = await callClaude(buildPrompt(c));
-    el.innerHTML = `<div class="ai-box">${result}</div>`;
+    setBoxText(el, result, false);
   } catch(e) {
-    el.innerHTML = `<div class="ai-box" style="color:var(--accent);">Error: ${e.message}</div>`;
+    setBoxText(el, `Error: ${e.message}`, true);
   }
 }
 
@@ -1603,9 +1710,9 @@ async function getAIRecommendation() {
   
   try {
     const text = await callClaude(buildPrompt(c));
-    result.innerHTML = `<div class="ai-box">${text}</div>`;
+    setBoxText(result, text, false);
   } catch(e) {
-    result.innerHTML = `<div class="ai-box" style="color:var(--accent);">Error: ${e.message}</div>`;
+    setBoxText(result, `Error: ${e.message}`, true);
   }
   
   btn.disabled = false;
@@ -1624,12 +1731,16 @@ async function runBatchAnalysis() {
   for (const c of high) {
     const card = document.createElement('div');
     card.style.cssText = 'background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:8px;';
-    card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${c.name}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}%</span></div><div class="thinking" style="font-size:11px;color:var(--text3);">Analyzing...</div>`;
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}%</span></div><div class="thinking" style="font-size:11px;color:var(--text3);">Analyzing...</div>`;
     results.appendChild(card);
     
     try {
       const text = await callClaude(buildPrompt(c));
-      card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${c.name}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}% · ${c.college} · ${c.doj}</span></div><div style="font-size:11px;color:var(--text2);line-height:1.7;">${text}</div>`;
+      card.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-family:var(--font-display);">${esc(c.name)}</strong><span style="color:${riskColor(c.risk_pct)}">${c.risk_pct}% · ${esc(c.college)} · ${esc(c.doj)}</span></div>`;
+      const textEl = document.createElement('div');
+      textEl.style.cssText = 'font-size:11px;color:var(--text2);line-height:1.7;white-space:pre-wrap;';
+      textEl.textContent = text;
+      card.appendChild(textEl);
     } catch(e) {
       card.innerHTML += `<div style="color:var(--accent);font-size:11px;">API error</div>`;
     }
@@ -1658,81 +1769,26 @@ let LIVE_MODE = false;  // true when backend URL is set and responding
 
 // getBackendUrl defined above
 
-function validateBackend() {
-  // Backend URL is now hardcoded - nothing to validate
+function getBackendKey() {
+  const input = document.getElementById('backendKey');
+  return (input && input.value.trim()) || localStorage.getItem('meesho_backend_key') || '';
 }
 
-async function refreshFromBackend() {
-  const url = getBackendUrl();
-  if (!url) { showToast('Enter your backend URL first'); return; }
+function syncBackendKey(val) {
+  localStorage.setItem('meesho_backend_key', val.trim());
+  clearTimeout(window._backendKeyTimer);
+  window._backendKeyTimer = setTimeout(() => {
+    if (val.trim()) refreshFromBackend();
+  }, 400);
+}
 
-  const btn = document.getElementById('refreshBtn');
-  const status = document.getElementById('backendStatus');
-  btn.textContent = '↻ LOADING...';
-  btn.disabled = true;
+function authHeaders(extra) {
+  const key = getBackendKey();
+  return key ? { ...(extra || {}), 'X-Predictor-Key': key } : { ...(extra || {}) };
+}
 
-  try {
-    const resp = await fetch(`${url}/score`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const data = await resp.json();
-
-    // Merge live candidates into our local array
-    if (data.candidates && data.candidates.length > 0) {
-      // Update OUTCOMES from backend
-      data.candidates.forEach(c => {
-        if (c.outcome) OUTCOMES[c.name] = c.outcome;
-      });
-
-      // Replace CANDIDATES_RAW with live data (preserve structure)
-      CANDIDATES_RAW.length = 0;
-      data.candidates.forEach(c => CANDIDATES_RAW.push({
-        name: c.name,
-        college: c.college,
-        tier: c.tier || 1,
-        role: c.role,
-        cgpa: c.cgpa || 7.5,
-        intern_months: c.intern_months || 2,
-        intern_tier: c.intern_tier || 0,
-        joining_form: c.joining_form || 0,
-        swag_form: c.swag_form || 0,
-        gmeet_k: c.gmeet_k || 0,
-        gmeet_a: c.gmeet_a || 0,
-        li_mention: c.li_mention || 0,
-        li_lc: c.li_lc || 0,
-        li_c: c.li_c || 0,
-        li_l: c.li_l || 0,
-        called: c.called || false,
-        call_risk: c.call_risk || 0,
-        doj: c.doj || 'Jul',
-        call_note: c.call_note || '',
-      }));
-
-      // Update weights from backend
-      if (data.weights) {
-        Object.assign(WEIGHTS, data.weights);
-        // Sync sliders if on weights tab
-        Object.keys(data.weights).forEach(k => {
-          const el = document.getElementById('wt_' + k);
-          if (el) el.textContent = data.weights[k];
-          const slider = document.querySelector(`input[oninput*="'${k}'"]`);
-          if (slider) slider.value = data.weights[k];
-        });
-      }
-
-      LIVE_MODE = true;
-      status.className = 'api-status api-ok';
-      status.textContent = `✓ LIVE · ${data.total} candidates`;
-      showToast(`✓ Loaded ${data.total} candidates from your sheet`);
-      renderAll();
-    }
-  } catch(e) {
-    status.className = 'api-status api-bad';
-    status.textContent = '✗ UNREACHABLE';
-    showToast(`Backend error: ${e.message}`);
-  }
-
-  btn.textContent = '↻ REFRESH';
-  btn.disabled = false;
+function validateBackend() {
+  // Backend URL is now hardcoded - nothing to validate
 }
 
 async function pushWeightsToBackend(weights) {
@@ -1742,7 +1798,7 @@ async function pushWeightsToBackend(weights) {
   try {
     await fetch(`${url}/weights`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(weights)
     });
   } catch(e) {
@@ -1767,29 +1823,12 @@ async function saveWeightsToBackend() {
   status.className = 'api-status api-empty';
   status.textContent = 'SAVING...';
 
-  // Combine profile weights + engagement weights into one payload
-  const allWeights = {
-    ...WEIGHTS,
-    eng_jf_yes: ENG_WEIGHTS.jf_yes, eng_jf_no: ENG_WEIGHTS.jf_no,
-    eng_sw_yes: ENG_WEIGHTS.sw_yes, eng_sw_no: ENG_WEIGHTS.sw_no,
-    eng_gk_yes: ENG_WEIGHTS.gk_yes, eng_gk_no: ENG_WEIGHTS.gk_no,
-    eng_ga_yes: ENG_WEIGHTS.ga_yes, eng_ga_no: ENG_WEIGHTS.ga_no,
-    eng_li_mention: ENG_WEIGHTS.li_mention,
-    eng_li_lc: ENG_WEIGHTS.li_lc, eng_li_c: ENG_WEIGHTS.li_c, eng_li_l: ENG_WEIGHTS.li_l,
-    eng_call_pos_strong: ENG_WEIGHTS.call_pos_strong,
-    eng_call_pos_mild: ENG_WEIGHTS.call_pos_mild,
-    eng_call_ghost: ENG_WEIGHTS.call_ghost,
-    eng_call_mba: ENG_WEIGHTS.call_mba,
-    eng_call_ppo: ENG_WEIGHTS.call_ppo,
-    eng_call_risky: ENG_WEIGHTS.call_risky,
-    eng_critical_threshold: ENG_WEIGHTS.eng_critical_threshold,
-    eng_risky_threshold: ENG_WEIGHTS.eng_risky_threshold,
-  };
+  const allWeights = buildWeightsPayload();
 
   try {
     const resp = await fetch(`${url}/weights/save`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: authHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(allWeights)
     });
 
@@ -1832,19 +1871,7 @@ function resetWeights() {
   Object.assign(WEIGHTS, defaults);
   Object.assign(ENG_WEIGHTS, engDefaults);
 
-  // Sync all sliders and display values
-  Object.entries(defaults).forEach(([k, v]) => {
-    const el = document.getElementById('wt_' + k);
-    if (el) el.textContent = v;
-    const slider = document.querySelector(`input[oninput*="'${k}'"]`);
-    if (slider) slider.value = v;
-  });
-  Object.entries(engDefaults).forEach(([k, v]) => {
-    const el = document.getElementById('ew_' + k);
-    if (el) el.textContent = v > 0 ? '+' + v : v;
-    const slider = document.querySelector(`input[oninput*="'${k}'"]`);
-    if (slider) slider.value = v;
-  });
+  syncWeightControls();
 
   renderDashboard();
   renderLiveRankings();
@@ -1867,13 +1894,16 @@ function renderAll() {
 function populateAISelect() {
   const sel = document.getElementById('aiCandidateSelect');
   const high = scoredCandidates().filter(c => c.risk_pct >= WEIGHTS.threshold);
-  sel.innerHTML = high.map(c => `<option value="${c.name}">${c.name} — ${c.risk_pct}% — ${c.college}</option>`).join('');
+  sel.replaceChildren(...high.map(c => new Option(`${c.name} — ${c.risk_pct}% — ${c.college}`, c.name)));
 }
 
 // =====================================================================
 // AUTO-FETCH ON LOAD
 // =====================================================================
-const BACKEND_URL = 'https://campus-offer-decline-predictor-backend.onrender.com';
+const DEPLOYED_BACKEND_URL = 'https://campus-offer-decline-predictor-backend.onrender.com';
+const BACKEND_URL = window.location.protocol.startsWith('http') && window.location.origin !== 'null'
+  ? window.location.origin
+  : DEPLOYED_BACKEND_URL;
 let _retryCount = 0;
 let _retryTimer = null;
 
@@ -1882,6 +1912,15 @@ function getBackendUrl() { return BACKEND_URL; }
 async function autoFetchFromBackend() {
   const status = document.getElementById('backendStatus');
   const btn = document.getElementById('refreshBtn');
+  if (!getBackendKey()) {
+    status.className = 'api-status api-bad';
+    status.textContent = 'KEY REQUIRED';
+    if (btn) { btn.textContent = '↻ REFRESH'; btn.disabled = false; }
+    renderDashboard();
+    populateAISelect();
+    renderLiveRankings();
+    return false;
+  }
 
   // Show waking up message with countdown
   const isFirstTry = _retryCount === 0;
@@ -1892,7 +1931,7 @@ async function autoFetchFromBackend() {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
-    const resp = await fetch(`${BACKEND_URL}/score`, { signal: controller.signal });
+    const resp = await fetch(`${BACKEND_URL}/score`, { signal: controller.signal, headers: authHeaders() });
     clearTimeout(timeout);
 
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
@@ -1926,28 +1965,7 @@ async function autoFetchFromBackend() {
         call_note: c.call_note || '',
       }));
 
-      if (data.weights) Object.assign(WEIGHTS, data.weights);
-
-      // Restore saved weights from backend if available
-      if (data.weights) {
-        const w = data.weights;
-        Object.keys(WEIGHTS).forEach(k => { if (w[k] !== undefined) WEIGHTS[k] = w[k]; });
-        // Restore eng weights (stored with eng_ prefix)
-        Object.keys(ENG_WEIGHTS).forEach(k => {
-          if (w['eng_' + k] !== undefined) ENG_WEIGHTS[k] = w['eng_' + k];
-        });
-        // Sync sliders
-        Object.entries(WEIGHTS).forEach(([k, v]) => {
-          const el = document.getElementById('wt_' + k);
-          if (el) el.textContent = v;
-          const slider = document.querySelector(`input[oninput*="updateWeight('${k}'"]`);
-          if (slider) slider.value = v;
-        });
-        Object.entries(ENG_WEIGHTS).forEach(([k, v]) => {
-          const el = document.getElementById('ew_' + k);
-          if (el) el.textContent = v > 0 ? '+' + v : v;
-        });
-      }
+      applyWeightsFromBackend(data.weights);
 
       LIVE_MODE = true;
       _retryCount = 0;
@@ -2012,7 +2030,15 @@ if (savedKey) {
   document.getElementById('apiKey').value = savedKey;
 }
 
-// Boot — auto-fetch immediately (URL is hardcoded)
+const savedBackendKey = localStorage.getItem('meesho_backend_key');
+if (savedBackendKey) {
+  const backendKeyEl = document.getElementById('backendKey');
+  if (backendKeyEl) backendKeyEl.value = savedBackendKey;
+}
+const backendSourceEl = document.getElementById('backendSource');
+if (backendSourceEl) backendSourceEl.textContent = BACKEND_URL.replace(/^https?:\/\//, '');
+
+// Boot — auto-fetch immediately
 autoFetchFromBackend();
 </script>
 </body>
