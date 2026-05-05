@@ -7,7 +7,7 @@ services:
     plan: free
     envVars:
       - key: ALLOWED_ORIGINS
-        value: https://campus-offer-decline-predictor-backend.onrender.com
+        value: https://campus-offer-decline-predictor-backend.onrender.com,https://apoorvasingh051.github.io
       - key: SHEET_ID
         value: 1SXojteQ8RpbEucxXbPRd0maLlasebibw4eVbNmNqdgI
       - key: SHEET_NAME

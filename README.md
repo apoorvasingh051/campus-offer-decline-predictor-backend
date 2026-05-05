@@ -18,7 +18,7 @@ A FastAPI backend that:
 
 | Variable | Purpose |
 |----------|---------|
-| `ALLOWED_ORIGINS` | Comma-separated frontend origins allowed by CORS, e.g. `https://your-dashboard.example.com` |
+| `ALLOWED_ORIGINS` | Comma-separated frontend origins allowed by CORS, e.g. `https://apoorvasingh051.github.io,https://campus-offer-decline-predictor-backend.onrender.com` |
 | `SHEET_ID` | Google Sheet ID. Defaults to the current tracker ID. |
 | `SHEET_NAME` | Sheet tab name. Defaults to `Main Tracker`. |
 
